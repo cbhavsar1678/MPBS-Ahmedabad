@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Member": {
+      "title": "Member",
+      "description": "Main family members of the community",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the member" },
+        "age": { "type": "number", "description": "Age as of 2026" },
+        "maritalStatus": { "type": "string", "description": "Marital status" },
+        "mobile": { "type": "string", "description": "Mobile number" },
+        "area": { "type": "string", "description": "Residential area" },
+        "address": { "type": "string", "description": "Full address" },
+        "isAlive": { "type": "boolean", "description": "Live or not live" },
+        "status": { "type": "string", "description": "Window/Divorce/Single" },
+        "education": { "type": "string", "description": "Educational qualification" },
+        "profession": { "type": "string", "description": "Current profession" },
+        "gender": { "type": "string", "description": "Male/Female" },
+        "photoUrl": { "type": "string", "description": "URL to member photo" },
+        "isActive": { "type": "boolean", "description": "Active or Inactive member" },
+        "role": { "type": "string", "enum": ["admin", "member"], "description": "User role" },
+        "email": { "type": "string", "description": "Email address for login" }
+      },
+      "required": ["name", "mobile", "role"]
+    },
+    "FamilyMember": {
+      "title": "FamilyMember",
+      "description": "Other members of a family",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string", "description": "Reference to the main Member" },
+        "name": { "type": "string", "description": "Name of the family member" },
+        "relation": { "type": "string", "description": "Relation to the main member" }
+      },
+      "required": ["memberId", "name", "relation"]
+    },
+    "Child": {
+      "title": "Child",
+      "description": "Children of a member",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string", "description": "Reference to the main Member" },
+        "name": { "type": "string", "description": "Child's name" },
+        "gender": { "type": "string", "description": "Male/Female" },
+        "photoUrl": { "type": "string", "description": "Child's photo URL" },
+        "address": { "type": "string", "description": "Child's address" },
+        "mobile": { "type": "string", "description": "Child's mobile number" },
+        "dob": { "type": "string", "format": "date", "description": "Date of birth" },
+        "age": { "type": "number", "description": "Age" },
+        "standard": { "type": "string", "description": "Current standard/grade" },
+        "medium": { "type": "string", "description": "Medium of instruction" },
+        "board": { "type": "string", "description": "Education board" },
+        "education": { "type": "string", "description": "Education details" },
+        "job": { "type": "string", "description": "Job or business" },
+        "jobField": { "type": "string", "description": "Job or business field" },
+        "maritalStatus": { "type": "string", "description": "Marital status" }
+      },
+      "required": ["memberId", "name"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "Community events",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Event name" },
+        "description": { "type": "string", "description": "Event description" },
+        "date": { "type": "string", "format": "date", "description": "Event date" },
+        "photos": { "type": "array", "items": { "type": "string" }, "description": "List of photo URLs" },
+        "attendees": { "type": "array", "items": { "type": "string" }, "description": "List of member IDs attending" }
+      },
+      "required": ["name", "date"]
+    },
+    "Donation": {
+      "title": "Donation",
+      "description": "Donation records",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string", "description": "Reference to the Member" },
+        "amount": { "type": "number", "description": "Donation amount" },
+        "date": { "type": "string", "format": "date", "description": "Donation date" }
+      },
+      "required": ["memberId", "amount", "date"]
+    },
+    "AnnualFee": {
+      "title": "AnnualFee",
+      "description": "Annual fee records",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string", "description": "Reference to the Member" },
+        "amount": { "type": "number", "description": "Annual fee amount" },
+        "date": { "type": "string", "format": "date", "description": "Payment date" }
+      },
+      "required": ["memberId", "amount", "date"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "Community teams",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Team name" },
+        "creationDate": { "type": "string", "format": "date", "description": "Team creation date" },
+        "members": { "type": "array", "items": { "type": "string" }, "description": "List of member IDs in the team" }
+      },
+      "required": ["name", "creationDate"]
+    }
+  },
+  "firestore": {
+    "members": { "schema": "Member", "description": "Collection of community members" },
+    "family-members": { "schema": "FamilyMember", "description": "Collection of family members" },
+    "children": { "schema": "Child", "description": "Collection of children" },
+    "events": { "schema": "Event", "description": "Collection of community events" },
+    "donations": { "schema": "Donation", "description": "Collection of donations" },
+    "annual-fees": { "schema": "AnnualFee", "description": "Collection of annual fees" },
+    "teams": { "schema": "Team", "description": "Collection of teams" }
+  }
+}
