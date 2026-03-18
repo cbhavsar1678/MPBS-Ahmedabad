@@ -5,7 +5,7 @@ import { Member, FamilyMember, Child, Donation, AnnualFee } from '../types';
 import { 
   User, Heart, Baby, CreditCard, HeartHandshake, 
   Edit2, Trash2, X, Save, ArrowLeft, Mail, Phone, MapPin, 
-  Briefcase, GraduationCap, Calendar, Plus, IndianRupee
+  Briefcase, GraduationCap, Calendar, Plus, IndianRupee, MessageCircle
 } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
 import ConfirmationModal from './ConfirmationModal';
@@ -139,7 +139,18 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
               
               <div className="space-y-3 text-sm text-gray-600">
                 <div className="flex items-center"><Mail size={16} className="mr-3 text-gray-400" /> {member.email}</div>
-                <div className="flex items-center"><Phone size={16} className="mr-3 text-gray-400" /> {member.mobile}</div>
+                <div className="flex items-center">
+                  <Phone size={16} className="mr-3 text-gray-400" /> {member.mobile}
+                  <a 
+                    href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="WhatsApp"
+                  >
+                    <MessageCircle size={14} />
+                  </a>
+                </div>
                 <div className="flex items-center"><MapPin size={16} className="mr-3 text-gray-400" /> {member.area}, {member.address}</div>
                 <div className="flex items-center"><Briefcase size={16} className="mr-3 text-gray-400" /> {member.profession}</div>
                 <div className="flex items-center"><GraduationCap size={16} className="mr-3 text-gray-400" /> {member.education}</div>
@@ -162,7 +173,20 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                 {family.map(m => (
                   <div key={m.id} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between group">
                     <div>
-                      <p className="font-bold text-gray-900">{m.name}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className="font-bold text-gray-900">{m.name}</p>
+                        {m.mobile && (
+                          <a 
+                            href={`https://wa.me/${m.mobile.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle size={12} />
+                          </a>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 uppercase tracking-wider">{m.relation} • {m.age} yrs</p>
                     </div>
                     {isAdmin && (
@@ -194,7 +218,20 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                 {children.map(c => (
                   <div key={c.id} className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between group">
                     <div>
-                      <p className="font-bold text-gray-900">{c.name}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className="font-bold text-gray-900">{c.name}</p>
+                        {c.mobile && (
+                          <a 
+                            href={`https://wa.me/${c.mobile.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle size={12} />
+                          </a>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 uppercase tracking-wider">{c.gender} • {c.age} yrs</p>
                       <div className="mt-1 space-y-0.5">
                         <p className="text-[10px] text-gray-400 flex items-center"><GraduationCap size={10} className="mr-1" /> {c.education || 'N/A'}</p>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Member } from '../types';
-import { Search, Filter, Grid, List, MoreVertical, Phone, MapPin, Briefcase, UserPlus, Edit2, Trash2, Download, Eye, FileText, IndianRupee, Users } from 'lucide-react';
+import { Search, Filter, Grid, List, MoreVertical, Phone, MapPin, Briefcase, UserPlus, Edit2, Trash2, Download, Eye, FileText, IndianRupee, Users, MessageCircle } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
 import MemberForm from './MemberForm';
 import MemberDetails from './MemberDetails';
@@ -218,9 +218,21 @@ const MemberDirectory: React.FC = () => {
               <p className="text-sm text-indigo-600 font-medium mb-4">{member.profession}</p>
               
               <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-500">
-                  <Phone size={14} className="mr-2" />
-                  {member.mobile}
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center">
+                    <Phone size={14} className="mr-2" />
+                    {member.mobile}
+                  </div>
+                  <a 
+                    href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="WhatsApp"
+                  >
+                    <MessageCircle size={16} />
+                  </a>
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
                   <MapPin size={14} className="mr-2" />
@@ -270,7 +282,18 @@ const MemberDirectory: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{member.mobile}</div>
+                        <div className="flex items-center space-x-2">
+                          <div className="text-sm text-gray-900">{member.mobile}</div>
+                          <a 
+                            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
+                        </div>
                         <div className="text-xs text-gray-500">{member.email}</div>
                       </td>
                       <td className="px-6 py-4">

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Member, Event, Donation, AnnualFee, FamilyMember, Child } from '../types';
-import { Users, UserCheck, UserMinus, Calendar, Heart, CreditCard, Edit2, Trash2, MoreVertical, MapPin, Phone, Briefcase, User, Baby, IndianRupee } from 'lucide-react';
+import { Users, UserCheck, UserMinus, Calendar, Heart, CreditCard, Edit2, Trash2, MoreVertical, MapPin, Phone, Briefcase, User, Baby, IndianRupee, MessageCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useFirebase } from '../contexts/FirebaseContext';
 import MemberForm from './MemberForm';
@@ -204,8 +204,20 @@ const Dashboard: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Phone size={14} className="mr-2 text-gray-400" /> {member.mobile}
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <div className="flex items-center">
+                            <Phone size={14} className="mr-2 text-gray-400" /> {member.mobile}
+                          </div>
+                          <a 
+                            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
                           <MapPin size={14} className="mr-2 text-gray-400" /> {member.area}

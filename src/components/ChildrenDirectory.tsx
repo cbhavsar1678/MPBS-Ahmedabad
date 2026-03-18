@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Member, FamilyMember, Child } from '../types';
-import { Search, Download, FileText, Baby, User, Users, Phone, MapPin, GraduationCap, Briefcase } from 'lucide-react';
+import { Search, Download, FileText, Baby, User, Users, Phone, MapPin, GraduationCap, Briefcase, MessageCircle } from 'lucide-react';
 import { exportToCSV, exportToPDF } from '../utils/exportUtils';
 
 const ChildrenDirectory: React.FC = () => {
@@ -180,8 +180,21 @@ const ChildrenDirectory: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Phone size={14} className="mr-2 text-gray-400" /> {child.mobile || 'N/A'}
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <div className="flex items-center">
+                          <Phone size={14} className="mr-2 text-gray-400" /> {child.mobile || 'N/A'}
+                        </div>
+                        {child.mobile && (
+                          <a 
+                            href={`https://wa.me/${child.mobile.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
+                        )}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <MapPin size={14} className="mr-2 text-gray-400" /> {child.area}

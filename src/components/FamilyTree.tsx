@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Member, FamilyMember, Child } from '../types';
-import { UserPlus, Plus, User, Users, X, Save, Trash2, Baby, Heart, Edit2, Download, FileText, Search, MapPin, ChevronDown, ChevronUp, Grid, List, Filter, GraduationCap, Briefcase, Phone, IndianRupee, Eye, TreePalm } from 'lucide-react';
+import { UserPlus, Plus, User, Users, X, Save, Trash2, Baby, Heart, Edit2, Download, FileText, Search, MapPin, ChevronDown, ChevronUp, Grid, List, Filter, GraduationCap, Briefcase, Phone, IndianRupee, Eye, TreePalm, MessageCircle } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { exportToCSV, exportToPDF } from '../utils/exportUtils';
 import ConfirmationModal from './ConfirmationModal';
@@ -395,8 +395,18 @@ const FamilyTree: React.FC = () => {
                         <div className="flex items-center">
                           <MapPin size={14} className="mr-1" /> {member.area}
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center text-sm text-gray-500">
                           <Phone size={14} className="mr-1" /> {member.mobile}
+                          <a 
+                            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
                         </div>
                         <div className="flex items-center text-indigo-600 font-medium">
                           <Users size={14} className="mr-1" /> {memberFamily.length + memberChildren.length} Members
@@ -537,14 +547,25 @@ const FamilyTree: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
-                    <div className="flex flex-wrap items-center gap-x-4 text-sm text-gray-500">
-                      <span>{member.area}</span>
-                      {member.mobile && (
-                        <span className="flex items-center">
-                          <Phone size={12} className="mr-1" /> {member.mobile}
-                        </span>
-                      )}
-                    </div>
+                      <div className="flex flex-wrap items-center gap-x-4 text-sm text-gray-500">
+                        <span>{member.area}</span>
+                        {member.mobile && (
+                          <div className="flex items-center">
+                            <span className="flex items-center">
+                              <Phone size={12} className="mr-1" /> {member.mobile}
+                            </span>
+                            <a 
+                              href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle size={14} />
+                            </a>
+                          </div>
+                        )}
+                      </div>
                   </div>
                 </div>
 
@@ -570,7 +591,20 @@ const FamilyTree: React.FC = () => {
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[11px] text-gray-500">
-                            {link.mobile && <span className="flex items-center"><Phone size={10} className="mr-1" /> {link.mobile}</span>}
+                            {link.mobile && (
+                              <div className="flex items-center">
+                                <span className="flex items-center"><Phone size={10} className="mr-1" /> {link.mobile}</span>
+                                <a 
+                                  href={`https://wa.me/${link.mobile.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                                  title="WhatsApp"
+                                >
+                                  <MessageCircle size={12} />
+                                </a>
+                              </div>
+                            )}
                             {link.education && <span className="flex items-center"><GraduationCap size={10} className="mr-1" /> {link.education}</span>}
                             {(link.profession || (link as any).job) && <span className="flex items-center"><Briefcase size={10} className="mr-1" /> {link.profession || (link as any).job}</span>}
                             {link.maritalStatus && <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">{link.maritalStatus}</span>}
