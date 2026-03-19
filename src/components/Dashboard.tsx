@@ -94,19 +94,25 @@ const Dashboard: React.FC = () => {
       }));
     });
 
-    const unsubDonations = onSnapshot(collection(db, 'donations'), (snapshot) => {
-      const total = snapshot.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
-      setStats(prev => ({ ...prev, totalDonations: total }));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'donations');
-    });
+    let unsubDonations = () => {};
+    if (isAdmin) {
+      unsubDonations = onSnapshot(collection(db, 'donations'), (snapshot) => {
+        const total = snapshot.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
+        setStats(prev => ({ ...prev, totalDonations: total }));
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'donations');
+      });
+    }
 
-    const unsubFees = onSnapshot(collection(db, 'annual-fees'), (snapshot) => {
-      const total = snapshot.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
-      setStats(prev => ({ ...prev, totalAnnualFees: total }));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'annual-fees');
-    });
+    let unsubFees = () => {};
+    if (isAdmin) {
+      unsubFees = onSnapshot(collection(db, 'annual-fees'), (snapshot) => {
+        const total = snapshot.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
+        setStats(prev => ({ ...prev, totalAnnualFees: total }));
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'annual-fees');
+      });
+    }
 
     const unsubEvents = onSnapshot(query(collection(db, 'events'), orderBy('date', 'desc'), limit(1)), (snapshot) => {
       if (!snapshot.empty) {
@@ -159,9 +165,13 @@ const Dashboard: React.FC = () => {
         <StatCard icon={<UserCheck className="text-emerald-600" />} label="Male Members" value={stats.totalMale} color="bg-emerald-50" />
         <StatCard icon={<UserMinus className="text-pink-600" />} label="Female Members" value={stats.totalFemale} color="bg-pink-50" />
         <StatCard icon={<Baby className="text-violet-600" />} label="Children (18+)" value={stats.children18Plus} color="bg-violet-50" />
-        <StatCard icon={<Baby className="text-cyan-600" />} label="Children (<18)" value={stats.childrenUnder18} color="bg-cyan-50" />
-        <StatCard icon={<Heart className="text-red-600" />} label="Total Donations" value={`₹${stats.totalDonations.toLocaleString()}`} color="bg-red-50" />
-        <StatCard icon={<CreditCard className="text-amber-600" />} label="Total Fees" value={`₹${stats.totalAnnualFees.toLocaleString()}`} color="bg-amber-50" />
+        <StatCard icon={<Baby size={20} className="text-cyan-600" />} label="Children (<18)" value={stats.childrenUnder18} color="bg-cyan-50" />
+        {isAdmin && (
+          <>
+            <StatCard icon={<Heart className="text-red-600" />} label="Total Donations" value={`₹${stats.totalDonations.toLocaleString()}`} color="bg-red-50" />
+            <StatCard icon={<CreditCard className="text-amber-600" />} label="Total Fees" value={`₹${stats.totalAnnualFees.toLocaleString()}`} color="bg-amber-50" />
+          </>
+        )}
       </div>
 
       {/* Members List Section - Full Width */}
@@ -206,18 +216,20 @@ const Dashboard: React.FC = () => {
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-sm text-gray-600">
                           <div className="flex items-center">
-                            <Phone size={14} className="mr-2 text-gray-400" /> {member.mobile}
+                            <Phone size={14} className="mr-2 text-gray-400" /> {isAdmin ? member.mobile : 'Hidden'}
                           </div>
-                          <a 
-                            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="WhatsApp"
-                          >
-                            <MessageCircle size={14} />
-                          </a>
+                          {isAdmin && (
+                            <a 
+                              href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle size={14} />
+                            </a>
+                          )}
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
                           <MapPin size={14} className="mr-2 text-gray-400" /> {member.area}
@@ -282,32 +294,34 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
-              <CreditCard size={24} />
+      {isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
+                <CreditCard size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Fee Collection Summary</h3>
+                <p className="text-sm text-gray-500">All till date</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Fee Collection Summary</h3>
-              <p className="text-sm text-gray-500">All till date</p>
-            </div>
+            <p className="text-4xl font-black text-indigo-600">₹{stats.totalAnnualFees.toLocaleString()}</p>
           </div>
-          <p className="text-4xl font-black text-indigo-600">₹{stats.totalAnnualFees.toLocaleString()}</p>
-        </div>
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
-              <Heart size={24} />
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                <Heart size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Donations Summary</h3>
+                <p className="text-sm text-gray-500">All till date</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Donations Summary</h3>
-              <p className="text-sm text-gray-500">All till date</p>
-            </div>
+            <p className="text-4xl font-black text-emerald-600">₹{stats.totalDonations.toLocaleString()}</p>
           </div>
-          <p className="text-4xl font-black text-emerald-600">₹{stats.totalDonations.toLocaleString()}</p>
         </div>
-      </div>
+      )}
 
       {/* Latest Event Section - Full Width */}
       <div className="w-full">

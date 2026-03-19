@@ -45,13 +45,18 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
       setChildren(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Child)));
     });
 
-    const unsubDonations = onSnapshot(query(collection(db, 'donations'), where('memberId', '==', memberId)), (snapshot) => {
-      setDonations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Donation)));
-    });
+    let unsubDonations = () => {};
+    let unsubFees = () => {};
 
-    const unsubFees = onSnapshot(query(collection(db, 'annual-fees'), where('memberId', '==', memberId)), (snapshot) => {
-      setFees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnnualFee)));
-    });
+    if (isAdmin) {
+      unsubDonations = onSnapshot(query(collection(db, 'donations'), where('memberId', '==', memberId)), (snapshot) => {
+        setDonations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Donation)));
+      });
+
+      unsubFees = onSnapshot(query(collection(db, 'annual-fees'), where('memberId', '==', memberId)), (snapshot) => {
+        setFees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnnualFee)));
+      });
+    }
 
     return () => {
       unsubMember();
@@ -69,6 +74,30 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, deleteConfirm.collection);
       }
+    }
+  };
+
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showAddForm) return;
+    try {
+      const { type } = showAddForm;
+      const collectionName = type === 'family' ? 'family-members' : 
+                            type === 'child' ? 'children' : 
+                            type === 'donation' ? 'donations' : 'annual-fees';
+      
+      const newData = {
+        ...formData,
+        memberId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, collectionName), newData);
+      setShowAddForm(null);
+      setFormData({});
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'member-details');
     }
   };
 
@@ -91,6 +120,8 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
       handleFirestoreError(error, OperationType.UPDATE, 'member-details');
     }
   };
+
+  const [formData, setFormData] = useState<any>({});
 
   if (loading) return <div className="flex justify-center p-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
   if (!member) return <div className="text-center p-20">Member not found</div>;
@@ -138,20 +169,26 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
               </div>
               
               <div className="space-y-3 text-sm text-gray-600">
-                <div className="flex items-center"><Mail size={16} className="mr-3 text-gray-400" /> {member.email}</div>
-                <div className="flex items-center">
-                  <Phone size={16} className="mr-3 text-gray-400" /> {member.mobile}
-                  <a 
-                    href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                    title="WhatsApp"
-                  >
-                    <MessageCircle size={14} />
-                  </a>
-                </div>
-                <div className="flex items-center"><MapPin size={16} className="mr-3 text-gray-400" /> {member.area}, {member.address}</div>
+                {isAdmin ? (
+                  <>
+                    <div className="flex items-center"><Mail size={16} className="mr-3 text-gray-400" /> {member.email}</div>
+                    <div className="flex items-center">
+                      <Phone size={16} className="mr-3 text-gray-400" /> {member.mobile}
+                      <a 
+                        href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                        title="WhatsApp"
+                      >
+                        <MessageCircle size={14} />
+                      </a>
+                    </div>
+                    <div className="flex items-center"><MapPin size={16} className="mr-3 text-gray-400" /> {member.area}, {member.address}</div>
+                  </>
+                ) : (
+                  <div className="flex items-center text-gray-400 italic"><MapPin size={16} className="mr-3 text-gray-400" /> {member.area} (Address Hidden)</div>
+                )}
                 <div className="flex items-center"><Briefcase size={16} className="mr-3 text-gray-400" /> {member.profession}</div>
                 <div className="flex items-center"><GraduationCap size={16} className="mr-3 text-gray-400" /> {member.education}</div>
               </div>
@@ -167,6 +204,15 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
               <h3 className="text-lg font-bold text-gray-900 flex items-center">
                 <Heart className="mr-2 text-pink-500" size={20} /> Family Members
               </h3>
+              {isAdmin && (
+                <button 
+                  onClick={() => { setFormData({ name: '', relation: 'Spouse', age: 0 }); setShowAddForm({ type: 'family' }); }}
+                  className="p-2 bg-pink-50 text-pink-600 rounded-xl hover:bg-pink-100 transition-colors"
+                  title="Add Family Member"
+                >
+                  <Plus size={18} />
+                </button>
+              )}
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -175,7 +221,7 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                     <div>
                       <div className="flex items-center space-x-2">
                         <p className="font-bold text-gray-900">{m.name}</p>
-                        {m.mobile && (
+                        {isAdmin && m.mobile && (
                           <a 
                             href={`https://wa.me/${m.mobile.replace(/\D/g, '')}`}
                             target="_blank"
@@ -188,6 +234,7 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 uppercase tracking-wider">{m.relation} • {m.age} yrs</p>
+                      {!isAdmin && <p className="text-[10px] text-gray-400 italic">Contact Hidden</p>}
                     </div>
                     {isAdmin && (
                       <div className="flex items-center space-x-2">
@@ -212,6 +259,15 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
               <h3 className="text-lg font-bold text-gray-900 flex items-center">
                 <Baby className="mr-2 text-blue-500" size={20} /> Children
               </h3>
+              {isAdmin && (
+                <button 
+                  onClick={() => { setFormData({ name: '', gender: 'Male', age: 0, education: '', job: '' }); setShowAddForm({ type: 'child' }); }}
+                  className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
+                  title="Add Child"
+                >
+                  <Plus size={18} />
+                </button>
+              )}
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -220,7 +276,7 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                     <div>
                       <div className="flex items-center space-x-2">
                         <p className="font-bold text-gray-900">{c.name}</p>
-                        {c.mobile && (
+                        {isAdmin && c.mobile && (
                           <a 
                             href={`https://wa.me/${c.mobile.replace(/\D/g, '')}`}
                             target="_blank"
@@ -233,6 +289,7 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 uppercase tracking-wider">{c.gender} • {c.age} yrs</p>
+                      {!isAdmin && <p className="text-[10px] text-gray-400 italic">Contact Hidden</p>}
                       <div className="mt-1 space-y-0.5">
                         <p className="text-[10px] text-gray-400 flex items-center"><GraduationCap size={10} className="mr-1" /> {c.education || 'N/A'}</p>
                         <p className="text-[10px] text-gray-400 flex items-center"><Briefcase size={10} className="mr-1" /> {c.job || 'N/A'}</p>
@@ -256,92 +313,293 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
           </section>
 
           {/* Donations Section */}
-          <section className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                <HeartHandshake className="mr-2 text-red-500" size={20} /> Donation History
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Date</th>
-                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Purpose</th>
-                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Amount</th>
-                    {isAdmin && <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {donations.map(d => (
-                    <tr key={d.id}>
-                      <td className="px-6 py-4 text-sm text-gray-600">{d.date}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{d.purpose || 'General'}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-gray-900">₹{d.amount}</td>
-                      {isAdmin && (
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button onClick={() => setEditingItem({ type: 'donation', data: d })} className="text-gray-300 hover:text-indigo-600">
-                              <Edit2 size={16} />
-                            </button>
-                            <button onClick={() => setDeleteConfirm({ isOpen: true, collection: 'donations', id: d.id! })} className="text-gray-300 hover:text-red-500">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      )}
+          {isAdmin && (
+            <section className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                  <HeartHandshake className="mr-2 text-red-500" size={20} /> Donation History
+                </h3>
+                {isAdmin && (
+                  <button 
+                    onClick={() => { setFormData({ amount: 0, date: new Date().toISOString().split('T')[0], purpose: 'General' }); setShowAddForm({ type: 'donation' }); }}
+                    className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
+                    title="Add Donation"
+                  >
+                    <Plus size={18} />
+                  </button>
+                )}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Purpose</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Amount</th>
+                      {isAdmin && <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {donations.length === 0 && <p className="p-6 text-center text-gray-400 text-sm italic">No donations recorded</p>}
-            </div>
-          </section>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {donations.map(d => (
+                      <tr key={d.id}>
+                        <td className="px-6 py-4 text-sm text-gray-600">{d.date}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{d.purpose || 'General'}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-gray-900">₹{d.amount}</td>
+                        {isAdmin && (
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <button onClick={() => setEditingItem({ type: 'donation', data: d })} className="text-gray-300 hover:text-indigo-600">
+                                <Edit2 size={16} />
+                              </button>
+                              <button onClick={() => setDeleteConfirm({ isOpen: true, collection: 'donations', id: d.id! })} className="text-gray-300 hover:text-red-500">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {donations.length === 0 && <p className="p-6 text-center text-gray-400 text-sm italic">No donations recorded</p>}
+              </div>
+            </section>
+          )}
 
           {/* Fees Section */}
-          <section className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                <CreditCard className="mr-2 text-emerald-500" size={20} /> Annual Fees
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Year</th>
-                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Date</th>
-                    <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Amount</th>
-                    {isAdmin && <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {fees.map(f => (
-                    <tr key={f.id}>
-                      <td className="px-6 py-4 text-sm text-gray-600">{f.year}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{f.date}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-gray-900">₹{f.amount}</td>
-                      {isAdmin && (
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button onClick={() => setEditingItem({ type: 'fee', data: f })} className="text-gray-300 hover:text-indigo-600">
-                              <Edit2 size={16} />
-                            </button>
-                            <button onClick={() => setDeleteConfirm({ isOpen: true, collection: 'annual-fees', id: f.id! })} className="text-gray-300 hover:text-red-500">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      )}
+          {isAdmin && (
+            <section className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                  <CreditCard className="mr-2 text-emerald-500" size={20} /> Annual Fees
+                </h3>
+                {isAdmin && (
+                  <button 
+                    onClick={() => { setFormData({ amount: 0, date: new Date().toISOString().split('T')[0], year: new Date().getFullYear().toString() }); setShowAddForm({ type: 'fee' }); }}
+                    className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
+                    title="Add Annual Fee"
+                  >
+                    <Plus size={18} />
+                  </button>
+                )}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Year</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Amount</th>
+                      {isAdmin && <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {fees.length === 0 && <p className="p-6 text-center text-gray-400 text-sm italic">No fee records found</p>}
-            </div>
-          </section>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {fees.map(f => (
+                      <tr key={f.id}>
+                        <td className="px-6 py-4 text-sm text-gray-600">{f.year}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{f.date}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-gray-900">₹{f.amount}</td>
+                        {isAdmin && (
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <button onClick={() => setEditingItem({ type: 'fee', data: f })} className="text-gray-300 hover:text-indigo-600">
+                                <Edit2 size={16} />
+                              </button>
+                              <button onClick={() => setDeleteConfirm({ isOpen: true, collection: 'annual-fees', id: f.id! })} className="text-gray-300 hover:text-red-500">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {fees.length === 0 && <p className="p-6 text-center text-gray-400 text-sm italic">No fee records found</p>}
+              </div>
+            </section>
+          )}
         </div>
       </div>
+
+      {/* Add Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+            <header className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Add {showAddForm.type}</h3>
+              <button onClick={() => setShowAddForm(null)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-full transition-all">
+                <X size={20} />
+              </button>
+            </header>
+            <form onSubmit={handleAddItem} className="p-6 space-y-4">
+              {showAddForm.type === 'family' && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      value={formData.name || ''} 
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Relation</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.relation || 'Spouse'} 
+                        onChange={e => setFormData({ ...formData, relation: e.target.value })}
+                      >
+                        <option value="Spouse">Spouse</option>
+                        <option value="Father">Father</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Brother">Brother</option>
+                        <option value="Sister">Sister</option>
+                        <option value="Daughter">Daughter</option>
+                        <option value="Son">Son</option>
+                        <option value="Grand Child">Grand Child</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Age</label>
+                      <input 
+                        type="number" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.age || 0} 
+                        onChange={e => setFormData({ ...formData, age: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              {showAddForm.type === 'child' && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      value={formData.name || ''} 
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Education</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.education || ''} 
+                        onChange={e => setFormData({ ...formData, education: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Profession</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.job || ''} 
+                        onChange={e => setFormData({ ...formData, job: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Age</label>
+                      <input 
+                        type="number" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.age || 0} 
+                        onChange={e => setFormData({ ...formData, age: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              {showAddForm.type === 'donation' && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Amount (₹)</label>
+                    <input 
+                      type="number" 
+                      required
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      value={formData.amount || 0} 
+                      onChange={e => setFormData({ ...formData, amount: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Purpose</label>
+                    <input 
+                      type="text" 
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      value={formData.purpose || ''} 
+                      onChange={e => setFormData({ ...formData, purpose: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
+                    <input 
+                      type="date" 
+                      required
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      value={formData.date || ''} 
+                      onChange={e => setFormData({ ...formData, date: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+              {showAddForm.type === 'fee' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Year</label>
+                      <input 
+                        type="text" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.year || ''} 
+                        onChange={e => setFormData({ ...formData, year: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Amount (₹)</label>
+                      <input 
+                        type="number" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.amount || 0} 
+                        onChange={e => setFormData({ ...formData, amount: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
+                    <input 
+                      type="date" 
+                      required
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      value={formData.date || ''} 
+                      onChange={e => setFormData({ ...formData, date: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+              <footer className="pt-6 flex justify-end space-x-3">
+                <button type="button" onClick={() => setShowAddForm(null)} className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-all">Cancel</button>
+                <button type="submit" className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center space-x-2">
+                  <Save size={18} />
+                  <span>Add Record</span>
+                </button>
+              </footer>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Simple Edit Modal */}
       {editingItem && (

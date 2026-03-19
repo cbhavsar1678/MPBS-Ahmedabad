@@ -101,8 +101,12 @@ const Teams: React.FC = () => {
           <p className="text-gray-500 mt-1">Organized groups working for community welfare</p>
         </div>
         <div className="flex items-center space-x-3">
-          <button onClick={handleExportCSV} className="p-2 text-gray-400 hover:text-indigo-600" title="Export CSV"><Download size={20} /></button>
-          <button onClick={handleExportPDF} className="p-2 text-gray-400 hover:text-indigo-600" title="Export PDF"><FileText size={20} /></button>
+          {isAdmin && (
+            <>
+              <button onClick={handleExportCSV} className="p-2 text-gray-400 hover:text-indigo-600" title="Export CSV"><Download size={20} /></button>
+              <button onClick={handleExportPDF} className="p-2 text-gray-400 hover:text-indigo-600" title="Export PDF"><FileText size={20} /></button>
+            </>
+          )}
           {isAdmin && (
             <button onClick={() => { setEditingTeam(null); setFormData({ name: '', description: '', members: [], photoUrl: '' }); setShowForm(true); }} className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
               <Plus size={20} />

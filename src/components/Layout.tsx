@@ -39,8 +39,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
     { id: 'children', label: 'Children', icon: <Baby size={20} /> },
     { id: 'family-tree', label: 'Family Tree', icon: <UserPlus size={20} />, adminOnly: true },
     { id: 'events', label: 'Events', icon: <Calendar size={20} /> },
-    { id: 'donations', label: 'Donations', icon: <Heart size={20} /> },
-    { id: 'annual-fees', label: 'Annual Fees', icon: <CreditCard size={20} /> },
+    { id: 'donations', label: 'Donations', icon: <Heart size={20} />, adminOnly: true },
+    { id: 'annual-fees', label: 'Annual Fees', icon: <CreditCard size={20} />, adminOnly: true },
     { id: 'teams', label: 'Teams', icon: <Users2 size={20} /> },
   ];
 

@@ -64,7 +64,17 @@ const MemberDirectory: React.FC = () => {
   }, [searchQuery, areaFilter, members]);
 
   const handleExportCSV = () => {
-    const exportData = filteredMembers.map(({ id, ...rest }) => rest);
+    const exportData = filteredMembers.map(({ id, ...rest }) => {
+      if (!isAdmin) {
+        return {
+          ...rest,
+          mobile: 'Hidden',
+          email: 'Hidden',
+          address: 'Address Hidden'
+        };
+      }
+      return rest;
+    });
     exportToCSV(exportData, 'members_directory');
   };
 
@@ -72,7 +82,7 @@ const MemberDirectory: React.FC = () => {
     const exportData = filteredMembers.map(({ name, profession, mobile, area, education }) => ({
       Name: name,
       Profession: profession,
-      Mobile: mobile,
+      Mobile: isAdmin ? mobile : 'Hidden',
       Area: area,
       Education: education
     }));
@@ -103,22 +113,24 @@ const MemberDirectory: React.FC = () => {
           <p className="text-gray-500 mt-1">Browse and search community members</p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
-            <button 
-              onClick={handleExportCSV}
-              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Export CSV"
-            >
-              <Download size={20} />
-            </button>
-            <button 
-              onClick={handleExportPDF}
-              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Export PDF"
-            >
-              <FileText size={20} />
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center space-x-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+              <button 
+                onClick={handleExportCSV}
+                className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="Export CSV"
+              >
+                <Download size={20} />
+              </button>
+              <button 
+                onClick={handleExportPDF}
+                className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="Export PDF"
+              >
+                <FileText size={20} />
+              </button>
+            </div>
+          )}
           {isAdmin && (
             <button
               onClick={() => { setSelectedMember(undefined); setShowForm(true); }}
@@ -218,22 +230,24 @@ const MemberDirectory: React.FC = () => {
               <p className="text-sm text-indigo-600 font-medium mb-4">{member.profession}</p>
               
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <Phone size={14} className="mr-2" />
-                    {member.mobile}
+                {isAdmin && (
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <Phone size={14} className="mr-2" />
+                      {member.mobile}
+                    </div>
+                    <a 
+                      href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                      title="WhatsApp"
+                    >
+                      <MessageCircle size={16} />
+                    </a>
                   </div>
-                  <a 
-                    href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                    title="WhatsApp"
-                  >
-                    <MessageCircle size={16} />
-                  </a>
-                </div>
+                )}
                 <div className="flex items-center text-sm text-gray-500">
                   <MapPin size={14} className="mr-2" />
                   {member.area}
@@ -282,19 +296,25 @@ const MemberDirectory: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <div className="text-sm text-gray-900">{member.mobile}</div>
-                          <a 
-                            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="WhatsApp"
-                          >
-                            <MessageCircle size={14} />
-                          </a>
-                        </div>
-                        <div className="text-xs text-gray-500">{member.email}</div>
+                        {isAdmin ? (
+                          <>
+                            <div className="flex items-center space-x-2">
+                              <div className="text-sm text-gray-900">{member.mobile}</div>
+                              <a 
+                                href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                                title="WhatsApp"
+                              >
+                                <MessageCircle size={14} />
+                              </a>
+                            </div>
+                            <div className="text-xs text-gray-500">{member.email}</div>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Hidden</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{member.profession}</div>

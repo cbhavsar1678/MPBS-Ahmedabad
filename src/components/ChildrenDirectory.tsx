@@ -3,9 +3,11 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Member, FamilyMember, Child } from '../types';
 import { Search, Download, FileText, Baby, User, Users, Phone, MapPin, GraduationCap, Briefcase, MessageCircle } from 'lucide-react';
+import { useFirebase } from '../contexts/FirebaseContext';
 import { exportToCSV, exportToPDF } from '../utils/exportUtils';
 
 const ChildrenDirectory: React.FC = () => {
+  const { isAdmin } = useFirebase();
   const [members, setMembers] = useState<Member[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [children, setChildren] = useState<Child[]>([]);
@@ -75,7 +77,7 @@ const ChildrenDirectory: React.FC = () => {
       'Age': c.age,
       'Gender': c.gender,
       'Area': c.area,
-      'Phone': c.mobile || 'N/A',
+      'Phone': isAdmin ? (c.mobile || 'N/A') : 'Hidden',
       'Education': c.education || 'N/A',
       'Profession': c.job || 'N/A'
     }));
@@ -89,7 +91,7 @@ const ChildrenDirectory: React.FC = () => {
       'Mother': c.motherName,
       'Age': c.age,
       'Gender': c.gender,
-      'Phone': c.mobile || 'N/A',
+      'Phone': isAdmin ? (c.mobile || 'N/A') : 'Hidden',
       'Profession': c.job || 'N/A'
     }));
     exportToPDF(data, 'Children Directory', 'children_directory');
@@ -103,22 +105,24 @@ const ChildrenDirectory: React.FC = () => {
           <p className="text-gray-500 mt-1">Comprehensive list of all community children</p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
-            <button 
-              onClick={handleExportCSV}
-              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Export CSV"
-            >
-              <Download size={20} />
-            </button>
-            <button 
-              onClick={handleExportPDF}
-              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Export PDF"
-            >
-              <FileText size={20} />
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center space-x-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+              <button 
+                onClick={handleExportCSV}
+                className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="Export CSV"
+              >
+                <Download size={20} />
+              </button>
+              <button 
+                onClick={handleExportPDF}
+                className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="Export PDF"
+              >
+                <FileText size={20} />
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -180,22 +184,26 @@ const ChildrenDirectory: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
-                      <div className="flex items-center justify-between text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <Phone size={14} className="mr-2 text-gray-400" /> {child.mobile || 'N/A'}
+                      {isAdmin ? (
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <div className="flex items-center">
+                            <Phone size={14} className="mr-2 text-gray-400" /> {child.mobile || 'N/A'}
+                          </div>
+                          {child.mobile && (
+                            <a 
+                              href={`https://wa.me/${child.mobile.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle size={14} />
+                            </a>
+                          )}
                         </div>
-                        {child.mobile && (
-                          <a 
-                            href={`https://wa.me/${child.mobile.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="WhatsApp"
-                          >
-                            <MessageCircle size={14} />
-                          </a>
-                        )}
-                      </div>
+                      ) : (
+                        <div className="text-xs text-gray-400 italic">Phone Hidden</div>
+                      )}
                       <div className="flex items-center text-sm text-gray-600">
                         <MapPin size={14} className="mr-2 text-gray-400" /> {child.area}
                       </div>

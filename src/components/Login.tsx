@@ -1,17 +1,105 @@
 import React, { useState } from 'react';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
-import { LogIn, Shield, Phone } from 'lucide-react';
+import { LogIn, Shield, Eye, EyeOff } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [loginMode, setLoginMode] = useState<'admin' | 'member'>('admin');
-  const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
-  const [showOtp, setShowOtp] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAdminLogin = async () => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    setError(null);
+
+    // Hardcoded credentials as requested
+    if (username === 'Admin' && password === 'Admin@1234') {
+      try {
+        // Map to a real Firebase user for session management
+        // We use a specific email format that we'll recognize in FirebaseContext
+        const email = 'admin@mpbs.com';
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (err: any) {
+          if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            try {
+              await createUserWithEmailAndPassword(auth, email, password);
+            } catch (createErr: any) {
+              if (createErr.code === 'auth/email-already-in-use') {
+                throw err;
+              }
+              throw createErr;
+            }
+          } else {
+            throw err;
+          }
+        }
+      } catch (err: any) {
+        console.error('Admin login failed:', err);
+        if (err.code === 'auth/operation-not-allowed') {
+          setError('Email/Password login is not enabled in Firebase. Please enable it in the Firebase Console (Authentication > Sign-in method).');
+        } else {
+          setError('Login failed. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setError('Invalid admin credentials.');
+    setLoading(false);
+  };
+
+  const handleMemberLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    setError(null);
+
+    // Hardcoded credentials as requested
+    if (username === 'MemberLogin' && password === 'mbps@2026') {
+      try {
+        const email = 'member@mpbs.com';
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (err: any) {
+          if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            try {
+              await createUserWithEmailAndPassword(auth, email, password);
+            } catch (createErr: any) {
+              if (createErr.code === 'auth/email-already-in-use') {
+                throw err;
+              }
+              throw createErr;
+            }
+          } else {
+            throw err;
+          }
+        }
+      } catch (err: any) {
+        console.error('Member login failed:', err);
+        if (err.code === 'auth/operation-not-allowed') {
+          setError('Email/Password login is not enabled in Firebase. Please enable it in the Firebase Console (Authentication > Sign-in method).');
+        } else {
+          setError('Login failed. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setError('Invalid member credentials.');
+    setLoading(false);
+  };
+
+  const handleGoogleLogin = async () => {
     if (loading) return;
     setLoading(true);
     setError(null);
@@ -19,31 +107,10 @@ const Login: React.FC = () => {
     try {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      console.error('Admin login failed:', err);
-      if (err.code === 'auth/popup-blocked') {
-        setError('Login popup was blocked by your browser. Please allow popups for this site and try again.');
-      } else if (err.code === 'auth/cancelled-popup-request') {
-        setError('Login request was cancelled. Please try again.');
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setError('Login window was closed before completion.');
-      } else {
-        setError('An error occurred during login. Please try again.');
-      }
+      console.error('Google login failed:', err);
+      setError('Google login failed. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleMemberLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showOtp) {
-      // Mock sending OTP
-      setShowOtp(true);
-    } else {
-      // Mock verifying OTP
-      console.log('Member login with mobile:', mobile);
-      // In a real app, you'd use Firebase Phone Auth or a custom backend
-      alert('Member login is currently in demo mode. Use Admin login for full access.');
     }
   };
 
@@ -61,7 +128,7 @@ const Login: React.FC = () => {
         <div className="p-8">
           <div className="flex bg-gray-100 p-1 rounded-xl mb-8">
             <button
-              onClick={() => setLoginMode('admin')}
+              onClick={() => { setLoginMode('admin'); setError(null); }}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg transition-all ${
                 loginMode === 'admin' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -70,92 +137,94 @@ const Login: React.FC = () => {
               <span className="font-medium">Admin</span>
             </button>
             <button
-              onClick={() => setLoginMode('member')}
+              onClick={() => { setLoginMode('member'); setError(null); }}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg transition-all ${
                 loginMode === 'member' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Phone size={18} />
+              <LogIn size={18} />
               <span className="font-medium">Member</span>
             </button>
           </div>
 
-          {loginMode === 'admin' ? (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-500 text-center mb-6">
-                Authorized community administrators can sign in using their Google account.
-              </p>
-              
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 mb-4">
-                  {error}
-                </div>
-              )}
+          <form onSubmit={loginMode === 'admin' ? handleAdminLogin : handleMemberLogin} className="space-y-4">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 mb-4">
+                {error}
+              </div>
+            )}
 
-              <button
-                onClick={handleAdminLogin}
-                disabled={loading}
-                className="w-full flex items-center justify-center space-x-3 bg-white border border-gray-200 py-3 rounded-xl hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                    <span className="font-bold text-gray-700">Continue with Google</span>
-                  </>
-                )}
-              </button>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Username</label>
+              <input
+                type="text"
+                placeholder="Enter username"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
             </div>
-          ) : (
-            <form onSubmit={handleMemberLogin} className="space-y-4">
-              {!showOtp ? (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number</label>
-                  <input
-                    type="tel"
-                    placeholder="Enter your registered mobile"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    required
-                  />
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Verification Code</label>
-                  <input
-                    type="text"
-                    placeholder="Enter 6-digit OTP"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
-              <button
-                type="submit"
-                className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
-              >
-                {showOtp ? 'Verify & Login' : 'Send OTP'}
-              </button>
-              {showOtp && (
+
+            <div className="relative">
+              <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter password"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 pr-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
                 <button
                   type="button"
-                  onClick={() => setShowOtp(false)}
-                  className="w-full text-sm text-indigo-600 font-medium hover:underline"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  Change mobile number
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+              ) : (
+                'Login'
               )}
-            </form>
-          )}
+            </button>
+
+            {loginMode === 'admin' && (
+              <div className="pt-4">
+                <div className="relative flex items-center justify-center mb-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <span className="relative px-4 bg-white text-xs text-gray-400 uppercase">Or</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center space-x-3 bg-white border border-gray-200 py-3 rounded-xl hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                  <span className="font-bold text-gray-700">Continue with Google</span>
+                </button>
+              </div>
+            )}
+          </form>
         </div>
 
         <div className="p-6 bg-gray-50 text-center">
           <p className="text-xs text-gray-400">
-            By signing in, you agree to our Community Guidelines and Privacy Policy.
+            Authorized access only. By signing in, you agree to our Community Guidelines.
           </p>
         </div>
       </div>

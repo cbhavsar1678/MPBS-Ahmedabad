@@ -9,6 +9,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         ((request.auth.token.email == "cbhavsar1678@gmail.com" && request.auth.token.email_verified == true) ||
+         (request.auth.token.email == "admin@mpbs.com") ||
          (exists(/databases/$(database)/documents/members/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/members/$(request.auth.uid)).data.role == 'admin'));
     }
@@ -50,13 +51,13 @@ service cloud.firestore {
 
     // Donations
     match /donations/{donationId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 
     // Annual Fees
     match /annual-fees/{feeId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 

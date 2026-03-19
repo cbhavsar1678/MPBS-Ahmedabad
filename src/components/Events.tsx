@@ -154,16 +154,18 @@ const Events: React.FC = () => {
           <p className="text-gray-500 mt-1">Stay updated with upcoming and past community gatherings</p>
         </div>
         <div className="flex items-center space-x-3">
-          <button onClick={handleExportCSV} className="p-2 text-gray-400 hover:text-indigo-600" title="Export CSV"><Download size={20} /></button>
-          <button onClick={handleExportPDF} className="p-2 text-gray-400 hover:text-indigo-600" title="Export PDF"><FileText size={20} /></button>
           {isAdmin && (
-            <button
-              onClick={() => { setEditingEvent(null); setFormData({ name: '', description: '', date: '', location: '', time: '', photos: [], attendedCount: 0 }); setShowForm(true); }}
-              className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-            >
-              <Plus size={20} />
-              <span>Create Event</span>
-            </button>
+            <>
+              <button onClick={handleExportCSV} className="p-2 text-gray-400 hover:text-indigo-600" title="Export CSV"><Download size={20} /></button>
+              <button onClick={handleExportPDF} className="p-2 text-gray-400 hover:text-indigo-600" title="Export PDF"><FileText size={20} /></button>
+              <button
+                onClick={() => { setEditingEvent(null); setFormData({ name: '', description: '', date: '', location: '', time: '', photos: [], attendedCount: 0 }); setShowForm(true); }}
+                className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+              >
+                <Plus size={20} />
+                <span>Create Event</span>
+              </button>
+            </>
           )}
         </div>
       </header>

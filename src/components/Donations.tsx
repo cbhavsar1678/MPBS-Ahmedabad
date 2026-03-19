@@ -9,6 +9,19 @@ import ConfirmationModal from './ConfirmationModal';
 
 const Donations: React.FC = () => {
   const { isAdmin } = useFirebase();
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+        <div className="bg-red-50 p-6 rounded-3xl border border-red-100 mb-4">
+          <Heart className="text-red-600 w-12 h-12 mx-auto mb-2" />
+          <h2 className="text-2xl font-bold text-gray-900">Access Restricted</h2>
+          <p className="text-gray-500">You do not have permission to view donation records.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [donations, setDonations] = useState<Donation[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [showForm, setShowForm] = useState(false);

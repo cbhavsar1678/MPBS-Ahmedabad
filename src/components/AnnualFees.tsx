@@ -9,6 +9,19 @@ import ConfirmationModal from './ConfirmationModal';
 
 const AnnualFees: React.FC = () => {
   const { isAdmin } = useFirebase();
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+        <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 mb-4">
+          <CreditCard className="text-amber-600 w-12 h-12 mx-auto mb-2" />
+          <h2 className="text-2xl font-bold text-gray-900">Access Restricted</h2>
+          <p className="text-gray-500">You do not have permission to view annual fee records.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [fees, setFees] = useState<AnnualFee[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [showForm, setShowForm] = useState(false);

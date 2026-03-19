@@ -126,10 +126,10 @@ const FamilyTree: React.FC = () => {
           'Relation': f.relation,
           'Age': f.age,
           'Gender': f.gender,
-          'Mobile': f.mobile,
-          'Email': f.email,
+          'Mobile': isAdmin ? f.mobile : 'Hidden',
+          'Email': isAdmin ? f.email : 'Hidden',
           'Area': f.area,
-          'Address': f.address,
+          'Address': isAdmin ? f.address : 'Address Hidden',
           'Education': f.education,
           'Profession': f.profession,
           'Marital Status': f.maritalStatus,
@@ -144,10 +144,10 @@ const FamilyTree: React.FC = () => {
           'Relation': 'Child',
           'Age': c.age,
           'Gender': c.gender,
-          'Mobile': c.mobile || 'N/A',
+          'Mobile': isAdmin ? (c.mobile || 'N/A') : 'Hidden',
           'Email': 'N/A',
           'Area': member.area,
-          'Address': c.address || member.address,
+          'Address': isAdmin ? (c.address || member.address) : 'Address Hidden',
           'Education': c.education,
           'Profession': c.job || 'N/A',
           'Marital Status': c.maritalStatus || 'Single',
@@ -171,7 +171,7 @@ const FamilyTree: React.FC = () => {
           Relation: f.relation,
           Age: f.age,
           Gender: f.gender,
-          Mobile: f.mobile,
+          Mobile: isAdmin ? f.mobile : 'Hidden',
           Profession: f.profession
         });
       });
@@ -183,7 +183,7 @@ const FamilyTree: React.FC = () => {
           Relation: 'Child',
           Age: c.age,
           Gender: c.gender,
-          Mobile: c.mobile || 'N/A',
+          Mobile: isAdmin ? (c.mobile || 'N/A') : 'Hidden',
           Profession: c.job || 'N/A'
         });
       });
@@ -299,22 +299,24 @@ const FamilyTree: React.FC = () => {
               <span>Link Family Member</span>
             </button>
           )}
-          <div className="flex items-center space-x-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
-            <button 
-              onClick={handleExportAllCSV}
-              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Export All CSV"
-            >
-              <Download size={20} />
-            </button>
-            <button 
-              onClick={handleExportAllPDF}
-              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Export All PDF"
-            >
-              <FileText size={20} />
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center space-x-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+              <button 
+                onClick={handleExportAllCSV}
+                className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="Export All CSV"
+              >
+                <Download size={20} />
+              </button>
+              <button 
+                onClick={handleExportAllPDF}
+                className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="Export All PDF"
+              >
+                <FileText size={20} />
+              </button>
+            </div>
+          )}
           <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-xl">
             <button 
               onClick={() => setViewMode('tree')}
@@ -396,17 +398,19 @@ const FamilyTree: React.FC = () => {
                           <MapPin size={14} className="mr-1" /> {member.area}
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
-                          <Phone size={14} className="mr-1" /> {member.mobile}
-                          <a 
-                            href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="WhatsApp"
-                          >
-                            <MessageCircle size={14} />
-                          </a>
+                          <Phone size={14} className="mr-1" /> {isAdmin ? member.mobile : 'Hidden'}
+                          {isAdmin && (
+                            <a 
+                              href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle size={14} />
+                            </a>
+                          )}
                         </div>
                         <div className="flex items-center text-indigo-600 font-medium">
                           <Users size={14} className="mr-1" /> {memberFamily.length + memberChildren.length} Members
@@ -415,20 +419,24 @@ const FamilyTree: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleExportCSV(member); }}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                      title="Download CSV"
-                    >
-                      <Download size={20} />
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleExportPDF(member); }}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                      title="Download PDF"
-                    >
-                      <FileText size={20} />
-                    </button>
+                    {isAdmin && (
+                      <>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleExportCSV(member); }}
+                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                          title="Download CSV"
+                        >
+                          <Download size={20} />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleExportPDF(member); }}
+                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                          title="Download PDF"
+                        >
+                          <FileText size={20} />
+                        </button>
+                      </>
+                    )}
                     {isExpanded ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
                   </div>
                 </div>
@@ -552,17 +560,19 @@ const FamilyTree: React.FC = () => {
                         {member.mobile && (
                           <div className="flex items-center">
                             <span className="flex items-center">
-                              <Phone size={12} className="mr-1" /> {member.mobile}
+                              <Phone size={12} className="mr-1" /> {isAdmin ? member.mobile : 'Hidden'}
                             </span>
-                            <a 
-                              href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                              title="WhatsApp"
-                            >
-                              <MessageCircle size={14} />
-                            </a>
+                            {isAdmin && (
+                              <a 
+                                href={`https://wa.me/${member.mobile.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                                title="WhatsApp"
+                              >
+                                <MessageCircle size={14} />
+                              </a>
+                            )}
                           </div>
                         )}
                       </div>
@@ -593,16 +603,18 @@ const FamilyTree: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[11px] text-gray-500">
                             {link.mobile && (
                               <div className="flex items-center">
-                                <span className="flex items-center"><Phone size={10} className="mr-1" /> {link.mobile}</span>
-                                <a 
-                                  href={`https://wa.me/${link.mobile.replace(/\D/g, '')}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
-                                  title="WhatsApp"
-                                >
-                                  <MessageCircle size={12} />
-                                </a>
+                                <span className="flex items-center"><Phone size={10} className="mr-1" /> {isAdmin ? link.mobile : 'Hidden'}</span>
+                                {isAdmin && (
+                                  <a 
+                                    href={`https://wa.me/${link.mobile.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ml-2 p-1 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                                    title="WhatsApp"
+                                  >
+                                    <MessageCircle size={12} />
+                                  </a>
+                                )}
                               </div>
                             )}
                             {link.education && <span className="flex items-center"><GraduationCap size={10} className="mr-1" /> {link.education}</span>}
@@ -1035,11 +1047,11 @@ const FamilyTree: React.FC = () => {
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mobile</p>
-                <p className="text-gray-900 font-medium">{viewingFamilyMember.mobile || 'N/A'}</p>
+                <p className="text-gray-900 font-medium">{isAdmin ? (viewingFamilyMember.mobile || 'N/A') : 'Hidden'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email</p>
-                <p className="text-gray-900 font-medium">{viewingFamilyMember.email || 'N/A'}</p>
+                <p className="text-gray-900 font-medium">{isAdmin ? (viewingFamilyMember.email || 'N/A') : 'Hidden'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Education</p>
@@ -1055,7 +1067,7 @@ const FamilyTree: React.FC = () => {
               </div>
               <div className="space-y-1 md:col-span-2">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Full Address</p>
-                <p className="text-gray-900 font-medium">{viewingFamilyMember.address || 'N/A'}</p>
+                <p className="text-gray-900 font-medium">{isAdmin ? (viewingFamilyMember.address || 'N/A') : 'Address Hidden'}</p>
               </div>
             </div>
             <footer className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
