@@ -72,6 +72,7 @@ const ChildrenDirectory: React.FC = () => {
   const handleExportCSV = () => {
     const data = filteredChildren.map(c => ({
       'Child Name': c.name,
+      'Relation': c.relation || 'N/A',
       'Father Name': c.fatherName,
       'Mother Name': c.motherName,
       'Age': c.age,
@@ -79,7 +80,7 @@ const ChildrenDirectory: React.FC = () => {
       'Area': c.area,
       'Phone': isAdmin ? (c.mobile || 'N/A') : 'Hidden',
       'Education': c.education || 'N/A',
-      'Profession': c.job || 'N/A'
+      'Profession': c.profession || c.job || 'N/A'
     }));
     exportToCSV(data, 'children_directory');
   };
@@ -87,12 +88,13 @@ const ChildrenDirectory: React.FC = () => {
   const handleExportPDF = () => {
     const data = filteredChildren.map(c => ({
       'Name': c.name,
+      'Relation': c.relation || 'N/A',
       'Father': c.fatherName,
       'Mother': c.motherName,
       'Age': c.age,
       'Gender': c.gender,
       'Phone': isAdmin ? (c.mobile || 'N/A') : 'Hidden',
-      'Profession': c.job || 'N/A'
+      'Profession': c.profession || c.job || 'N/A'
     }));
     exportToPDF(data, 'Children Directory', 'children_directory');
   };
@@ -145,6 +147,7 @@ const ChildrenDirectory: React.FC = () => {
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Child Details</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Relation</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Parents</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Age & Gender</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Contact & Area</th>
@@ -165,6 +168,11 @@ const ChildrenDirectory: React.FC = () => {
                       </div>
                       <span className="font-bold text-gray-900">{child.name}</span>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wider">
+                      {child.relation || 'Son'}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
@@ -215,7 +223,7 @@ const ChildrenDirectory: React.FC = () => {
                         <GraduationCap size={14} className="mr-2 text-gray-400" /> {child.education || 'N/A'}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <Briefcase size={14} className="mr-2 text-gray-400" /> {child.job || 'N/A'}
+                        <Briefcase size={14} className="mr-2 text-gray-400" /> {child.profession || child.job || 'N/A'}
                       </div>
                     </div>
                   </td>
@@ -223,7 +231,7 @@ const ChildrenDirectory: React.FC = () => {
               ))}
               {filteredChildren.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-400 italic">
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-400 italic">
                     No children found matching your search.
                   </td>
                 </tr>

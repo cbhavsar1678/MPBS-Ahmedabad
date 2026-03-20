@@ -43,18 +43,48 @@ const FamilyTree: React.FC = () => {
 
   const [familyData, setFamilyData] = useState({
     ...initialFamilyData,
+    dob: '',
     photoUrl: ''
   });
 
   const [childData, setChildData] = useState({
     name: '',
+    relation: 'Son',
     gender: 'Male',
-    dob: '',
     education: '',
     job: '',
     age: 0,
-    photoUrl: ''
+    dob: '',
+    photoUrl: '',
+    mobile: '',
+    email: '',
+    isAlive: true,
+    maritalStatus: 'Single',
+    profession: '',
+    area: '',
+    address: ''
   });
+
+  const calculateAge = (dobString: string) => {
+    if (!dobString) return 0;
+    const today = new Date();
+    const birthDate = new Date(dobString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const handleDOBChange = (dob: string, type: 'family' | 'child') => {
+    const age = calculateAge(dob);
+    if (type === 'family') {
+      setFamilyData(prev => ({ ...prev, dob, age }));
+    } else {
+      setChildData(prev => ({ ...prev, dob, age }));
+    }
+  };
 
   useEffect(() => {
     const unsubMembers = onSnapshot(query(collection(db, 'members'), orderBy('name')), (snapshot) => {
@@ -197,13 +227,17 @@ const FamilyTree: React.FC = () => {
     if (!mId) return;
     setLoading(true);
     try {
+      // If relation is Daughter, Son, or Grand Child, save to children collection
+      const isChildRelation = ['Daughter', 'Son', 'Grand Child'].includes(familyData.relation);
+      const collectionName = isChildRelation ? 'children' : 'family-members';
+      
       if (editingFamilyId) {
-        await updateDoc(doc(db, 'family-members', editingFamilyId), {
+        await updateDoc(doc(db, collectionName, editingFamilyId), {
           ...familyData,
           updatedAt: serverTimestamp()
         });
       } else {
-        await addDoc(collection(db, 'family-members'), {
+        await addDoc(collection(db, collectionName), {
           ...familyData,
           memberId: mId,
           createdAt: serverTimestamp()
@@ -250,7 +284,23 @@ const FamilyTree: React.FC = () => {
       }
       setShowChildForm(false);
       setEditingChildId(null);
-      setChildData({ name: '', gender: 'Male', dob: '', education: '', job: '', age: 0, photoUrl: '' });
+      setChildData({ 
+        name: '', 
+        relation: 'Son',
+        gender: 'Male', 
+        education: '', 
+        job: '', 
+        age: 0, 
+        dob: '',
+        photoUrl: '',
+        mobile: '',
+        email: '',
+        isAlive: true,
+        maritalStatus: 'Single',
+        profession: '',
+        area: '',
+        address: ''
+      });
     } catch (error) {
       console.error('Error saving child:', error);
     } finally {
@@ -496,7 +546,7 @@ const FamilyTree: React.FC = () => {
                           </h4>
                           {isAdmin && (
                             <button 
-                              onClick={() => { setActiveMemberId(member.id!); setEditingChildId(null); setChildData({ name: '', gender: 'Male', dob: '', education: '', job: '', age: 0, photoUrl: '' }); setShowChildForm(true); }}
+                              onClick={() => { setActiveMemberId(member.id!); setEditingChildId(null); setChildData({ name: '', gender: 'Male', education: '', job: '', age: 0, photoUrl: '', relation: 'Son', mobile: '', email: '', isAlive: true, maritalStatus: 'Single', profession: '', area: '', address: '' }); setShowChildForm(true); }}
                               className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
                             >
                               <Plus size={18} />
@@ -731,7 +781,7 @@ const FamilyTree: React.FC = () => {
       {/* Family Member Form Modal */}
       {showFamilyForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-8">
+          <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden my-8">
             <header className="p-6 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-900">{editingFamilyId ? 'Edit' : 'Add'} Family Member</h3>
               <button onClick={() => setShowFamilyForm(false)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-full transition-all">
@@ -739,9 +789,9 @@ const FamilyTree: React.FC = () => {
               </button>
             </header>
             <form onSubmit={handleAddFamily} className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {!activeMemberId && (
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2 md:col-span-3">
                     <label className="text-sm font-bold text-gray-700">Main Member</label>
                     <select
                       required
@@ -784,13 +834,23 @@ const FamilyTree: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Date of Birth</label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={(familyData as any).dob || ''}
+                    onChange={e => handleDOBChange(e.target.value, 'family')}
+                  />
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Age</label>
                   <input
                     type="number"
                     required
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-gray-50"
                     value={familyData.age || 0}
                     onChange={e => setFamilyData({ ...familyData, age: parseInt(e.target.value) })}
+                    readOnly
                   />
                 </div>
                 <div className="space-y-2">
@@ -903,44 +963,77 @@ const FamilyTree: React.FC = () => {
           </div>
         </div>
       )}
-
       {showChildForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden my-8">
             <header className="p-6 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-900">{editingChildId ? 'Edit' : 'Add'} Child Record</h3>
               <button onClick={() => setShowChildForm(false)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-full transition-all">
                 <X size={20} />
               </button>
             </header>
-            <form onSubmit={handleAddChild} className="p-8 space-y-4">
-              {!activeMemberId && (
+            <form onSubmit={handleAddChild} className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {!activeMemberId && (
+                  <div className="space-y-2 md:col-span-3">
+                    <label className="text-sm font-bold text-gray-700">Main Member</label>
+                    <select
+                      required
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      value={(childData as any).memberId || ''}
+                      onChange={e => setChildData({ ...childData, memberId: e.target.value } as any)}
+                    >
+                      <option value="">Select Main Member...</option>
+                      {members.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">Main Member</label>
-                  <select
+                  <label className="text-sm font-bold text-gray-700">Full Name</label>
+                  <input
+                    type="text"
                     required
                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    value={(childData as any).memberId || ''}
-                    onChange={e => setChildData({ ...childData, memberId: e.target.value } as any)}
+                    value={childData.name || ''}
+                    onChange={e => setChildData({ ...childData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Relation</label>
+                  <select
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.relation || 'Son'}
+                    onChange={e => setChildData({ ...childData, relation: e.target.value })}
                   >
-                    <option value="">Select Main Member...</option>
-                    {members.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
+                    <option value="Son">Son</option>
+                    <option value="Daughter">Daughter</option>
+                    <option value="Grand Child">Grand Child</option>
                   </select>
                 </div>
-              )}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={childData.name || ''}
-                  onChange={e => setChildData({ ...childData, name: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+                {!editingChildId && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">Date of Birth</label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      value={(childData as any).dob || ''}
+                      onChange={e => handleDOBChange(e.target.value, 'child')}
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Age</label>
+                  <input
+                    type="number"
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-gray-50"
+                    value={childData.age || 0}
+                    onChange={e => setChildData({ ...childData, age: parseInt(e.target.value) })}
+                    readOnly
+                  />
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Gender</label>
                   <select
@@ -953,52 +1046,90 @@ const FamilyTree: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">Age</label>
+                  <label className="text-sm font-bold text-gray-700">Mobile Number</label>
                   <input
-                    type="number"
-                    required
+                    type="tel"
                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    value={childData.age || 0}
-                    onChange={e => setChildData({ ...childData, age: parseInt(e.target.value) })}
+                    value={childData.mobile || ''}
+                    onChange={e => setChildData({ ...childData, mobile: e.target.value })}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Date of Birth</label>
-                <input
-                  type="date"
-                  required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={childData.dob || ''}
-                  onChange={e => setChildData({ ...childData, dob: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Education</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={childData.education || ''}
-                  onChange={e => setChildData({ ...childData, education: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Job/Field</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={childData.job || ''}
-                  onChange={e => setChildData({ ...childData, job: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Photo URL</label>
-                <input
-                  type="url"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={childData.photoUrl || ''}
-                  onChange={e => setChildData({ ...childData, photoUrl: e.target.value })}
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Email ID</label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.email || ''}
+                    onChange={e => setChildData({ ...childData, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Live or No Live</label>
+                  <select
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.isAlive ? 'Live' : 'No Live'}
+                    onChange={e => setChildData({ ...childData, isAlive: e.target.value === 'Live' })}
+                  >
+                    <option value="Live">Live</option>
+                    <option value="No Live">No Live</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Marital Status</label>
+                  <select
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.maritalStatus || 'Single'}
+                    onChange={e => setChildData({ ...childData, maritalStatus: e.target.value })}
+                  >
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Education</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.education || ''}
+                    onChange={e => setChildData({ ...childData, education: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Profession</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.profession || ''}
+                    onChange={e => setChildData({ ...childData, profession: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Area</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.area || ''}
+                    onChange={e => setChildData({ ...childData, area: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-3">
+                  <label className="text-sm font-bold text-gray-700">Photo URL</label>
+                  <input
+                    type="url"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={childData.photoUrl || ''}
+                    onChange={e => setChildData({ ...childData, photoUrl: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-3">
+                  <label className="text-sm font-bold text-gray-700">Full Address</label>
+                  <textarea
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    rows={2}
+                    value={childData.address || ''}
+                    onChange={e => setChildData({ ...childData, address: e.target.value })}
+                  />
+                </div>
               </div>
               <footer className="pt-6 flex justify-end space-x-3">
                 <button type="button" onClick={() => setShowChildForm(false)} className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-xl">Cancel</button>

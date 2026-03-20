@@ -198,55 +198,57 @@ const Teams: React.FC = () => {
                 <X size={20} />
               </button>
             </header>
-            <form onSubmit={handleSubmit} className="p-8 space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Team Name</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Description</label>
-                <textarea
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  rows={2}
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Photo URL</label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/team-photo.jpg"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={formData.photoUrl}
-                  onChange={e => setFormData({ ...formData, photoUrl: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Add Members</label>
-                <div className="max-h-40 overflow-y-auto border border-gray-100 rounded-xl p-2 space-y-1">
-                  {members.map(member => (
-                    <label key={member.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                        checked={formData.members.includes(member.id!)}
-                        onChange={e => {
-                          const newMembers = e.target.checked
-                            ? [...formData.members, member.id!]
-                            : formData.members.filter(id => id !== member.id);
-                          setFormData({ ...formData, members: newMembers });
-                        }}
-                      />
-                      <span className="text-sm text-gray-700">{member.name}</span>
-                    </label>
-                  ))}
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2 col-span-1 md:col-span-3">
+                  <label className="text-sm font-bold text-gray-700">Team Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2 col-span-1 md:col-span-3">
+                  <label className="text-sm font-bold text-gray-700">Description</label>
+                  <textarea
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    rows={2}
+                    value={formData.description}
+                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2 col-span-1 md:col-span-3">
+                  <label className="text-sm font-bold text-gray-700">Photo URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/team-photo.jpg"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={formData.photoUrl}
+                    onChange={e => setFormData({ ...formData, photoUrl: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2 col-span-1 md:col-span-3">
+                  <label className="text-sm font-bold text-gray-700">Add Members</label>
+                  <div className="max-h-60 overflow-y-auto border border-gray-100 rounded-xl p-4 space-y-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {members.map(member => (
+                      <label key={member.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-100 transition-all">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                          checked={formData.members.includes(member.id!)}
+                          onChange={e => {
+                            const newMembers = e.target.checked
+                              ? [...formData.members, member.id!]
+                              : formData.members.filter(id => id !== member.id);
+                            setFormData({ ...formData, members: newMembers });
+                          }}
+                        />
+                        <span className="text-sm text-gray-700 truncate">{member.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
               <footer className="pt-6 flex justify-end space-x-3">

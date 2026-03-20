@@ -1,6 +1,7 @@
 export interface Member {
   id?: string;
   name: string;
+  dob?: string;
   age: number;
   maritalStatus: string;
   mobile: string;
@@ -22,6 +23,7 @@ export interface FamilyMember {
   memberId: string;
   name: string;
   relation: string;
+  dob?: string;
   age: number;
   gender: string;
   address: string;
@@ -38,19 +40,24 @@ export interface Child {
   id?: string;
   memberId: string;
   name: string;
+  relation: string;
   gender: string;
   photoUrl: string;
   address: string;
+  area: string;
   mobile: string;
-  dob: string;
+  email: string;
+  dob?: string;
   age: number;
-  standard: string;
-  medium: string;
-  board: string;
-  education: string;
-  job: string;
-  jobField: string;
+  isAlive: boolean;
   maritalStatus: string;
+  education: string;
+  profession: string;
+  standard?: string;
+  medium?: string;
+  board?: string;
+  job?: string;
+  jobField?: string;
 }
 
 export interface Event {
@@ -88,4 +95,30 @@ export interface Team {
   creationDate: string;
   members: string[];
   eventName?: string;
+}
+
+export interface ExpenseEntry {
+  amount: number;
+  description: string;
+  date: string;
+}
+
+export interface EventExpense {
+  id?: string;
+  eventId: string;
+  eventName: string;
+  year: string;
+  expenses: ExpenseEntry[];
+  totalAmount: number;
+}
+
+export interface BankDeposit {
+  id?: string;
+  bankName: string;
+  depositorName: string;
+  depositAmount: number;
+  depositDate: string;
+  maturityDate: string;
+  maturityTime: string;
+  finalAmount: number;
 }

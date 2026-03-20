@@ -82,10 +82,16 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
     if (!showAddForm) return;
     try {
       const { type } = showAddForm;
-      const collectionName = type === 'family' ? 'family-members' : 
+      
+      // If relation is Daughter, Son, or Grand Child, save to children collection
+      let collectionName = type === 'family' ? 'family-members' : 
                             type === 'child' ? 'children' : 
                             type === 'donation' ? 'donations' : 'annual-fees';
       
+      if (type === 'family' && ['Daughter', 'Son', 'Grand Child'].includes(formData.relation)) {
+        collectionName = 'children';
+      }
+
       const newData = {
         ...formData,
         memberId,
@@ -106,10 +112,14 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
     if (!editingItem) return;
     try {
       const { type, data } = editingItem;
-      const collectionName = type === 'family' ? 'family-members' : 
+      let collectionName = type === 'family' ? 'family-members' : 
                             type === 'child' ? 'children' : 
                             type === 'donation' ? 'donations' : 'annual-fees';
       
+      if (type === 'family' && ['Daughter', 'Son', 'Grand Child'].includes(data.relation)) {
+        collectionName = 'children';
+      }
+
       const { id, ...updateData } = data;
       await updateDoc(doc(db, collectionName, id), {
         ...updateData,
@@ -118,6 +128,27 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
       setEditingItem(null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'member-details');
+    }
+  };
+
+  const calculateAge = (dob: string) => {
+    if (!dob) return 0;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const handleDOBChange = (dob: string, isEdit: boolean = false) => {
+    const age = calculateAge(dob);
+    if (isEdit && editingItem) {
+      setEditingItem({ ...editingItem, data: { ...editingItem.data, dob, age } });
+    } else {
+      setFormData({ ...formData, dob, age });
     }
   };
 
@@ -425,7 +456,7 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
       {/* Add Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden">
             <header className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Add {showAddForm.type}</h3>
               <button onClick={() => setShowAddForm(null)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-full transition-all">
@@ -435,21 +466,21 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
             <form onSubmit={handleAddItem} className="p-6 space-y-4">
               {showAddForm.type === 'family' && (
                 <>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
-                    <input 
-                      type="text" 
-                      required
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={formData.name || ''} 
-                      onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.name || ''} 
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      />
+                    </div>
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-500 uppercase">Relation</label>
                       <select 
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                         value={formData.relation || 'Spouse'} 
                         onChange={e => setFormData({ ...formData, relation: e.target.value })}
                       >
@@ -464,36 +495,83 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                       </select>
                     </div>
                     <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date of Birth</label>
+                      <input 
+                        type="date" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.dob || ''} 
+                        onChange={e => handleDOBChange(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-500 uppercase">Age</label>
                       <input 
                         type="number" 
                         required
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                         value={formData.age || 0} 
                         onChange={e => setFormData({ ...formData, age: Number(e.target.value) })}
                       />
                     </div>
-                  </div>
-                </>
-              )}
-              {showAddForm.type === 'child' && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
-                    <input 
-                      type="text" 
-                      required
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={formData.name || ''} 
-                      onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Gender</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.gender || 'Male'} 
+                        onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Mobile Number</label>
+                      <input 
+                        type="tel" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.mobile || ''} 
+                        onChange={e => setFormData({ ...formData, mobile: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Email ID</label>
+                      <input 
+                        type="email" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.email || ''} 
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Marital Status</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.maritalStatus || 'Single'} 
+                        onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })}
+                      >
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Divorced">Divorced</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Living Status</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.isAlive !== false ? 'Live' : 'No Live'} 
+                        onChange={e => setFormData({ ...formData, isAlive: e.target.value === 'Live' })}
+                      >
+                        <option value="Live">Live</option>
+                        <option value="No Live">No Live</option>
+                      </select>
+                    </div>
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-500 uppercase">Education</label>
                       <input 
                         type="text" 
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                         value={formData.education || ''} 
                         onChange={e => setFormData({ ...formData, education: e.target.value })}
                       />
@@ -502,9 +580,64 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                       <label className="text-xs font-bold text-gray-500 uppercase">Profession</label>
                       <input 
                         type="text" 
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                        value={formData.job || ''} 
-                        onChange={e => setFormData({ ...formData, job: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.profession || ''} 
+                        onChange={e => setFormData({ ...formData, profession: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Area</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.area || ''} 
+                        onChange={e => setFormData({ ...formData, area: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Full Address</label>
+                    <textarea 
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      rows={2}
+                      value={formData.address || ''} 
+                      onChange={e => setFormData({ ...formData, address: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+              {showAddForm.type === 'child' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.name || ''} 
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Relation</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.relation || 'Son'} 
+                        onChange={e => setFormData({ ...formData, relation: e.target.value })}
+                      >
+                        <option value="Son">Son</option>
+                        <option value="Daughter">Daughter</option>
+                        <option value="Grand Child">Grand Child</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date of Birth</label>
+                      <input 
+                        type="date" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.dob || ''} 
+                        onChange={e => handleDOBChange(e.target.value)}
                       />
                     </div>
                     <div className="space-y-1">
@@ -512,50 +645,140 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                       <input 
                         type="number" 
                         required
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
                         value={formData.age || 0} 
                         onChange={e => setFormData({ ...formData, age: Number(e.target.value) })}
                       />
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Gender</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.gender || 'Male'} 
+                        onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Mobile Number</label>
+                      <input 
+                        type="tel" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.mobile || ''} 
+                        onChange={e => setFormData({ ...formData, mobile: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Email ID</label>
+                      <input 
+                        type="email" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.email || ''} 
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Marital Status</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.maritalStatus || 'Single'} 
+                        onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })}
+                      >
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Living Status</label>
+                      <select 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.isAlive !== false ? 'Live' : 'No Live'} 
+                        onChange={e => setFormData({ ...formData, isAlive: e.target.value === 'Live' })}
+                      >
+                        <option value="Live">Live</option>
+                        <option value="No Live">No Live</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Education</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.education || ''} 
+                        onChange={e => setFormData({ ...formData, education: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Profession</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.profession || ''} 
+                        onChange={e => setFormData({ ...formData, profession: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Area</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={formData.area || ''} 
+                        onChange={e => setFormData({ ...formData, area: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Full Address</label>
+                    <textarea 
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      rows={2}
+                      value={formData.address || ''} 
+                      onChange={e => setFormData({ ...formData, address: e.target.value })}
+                    />
                   </div>
                 </>
               )}
               {showAddForm.type === 'donation' && (
                 <>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Amount (₹)</label>
-                    <input 
-                      type="number" 
-                      required
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={formData.amount || 0} 
-                      onChange={e => setFormData({ ...formData, amount: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Purpose</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={formData.purpose || ''} 
-                      onChange={e => setFormData({ ...formData, purpose: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
-                    <input 
-                      type="date" 
-                      required
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={formData.date || ''} 
-                      onChange={e => setFormData({ ...formData, date: e.target.value })}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Amount (₹)</label>
+                      <input 
+                        type="number" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.amount || 0} 
+                        onChange={e => setFormData({ ...formData, amount: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Purpose</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.purpose || ''} 
+                        onChange={e => setFormData({ ...formData, purpose: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
+                      <input 
+                        type="date" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.date || ''} 
+                        onChange={e => setFormData({ ...formData, date: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </>
               )}
               {showAddForm.type === 'fee' && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-500 uppercase">Year</label>
                       <input 
@@ -576,16 +799,16 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
                         onChange={e => setFormData({ ...formData, amount: Number(e.target.value) })}
                       />
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
-                    <input 
-                      type="date" 
-                      required
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={formData.date || ''} 
-                      onChange={e => setFormData({ ...formData, date: e.target.value })}
-                    />
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
+                      <input 
+                        type="date" 
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={formData.date || ''} 
+                        onChange={e => setFormData({ ...formData, date: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </>
               )}
@@ -604,7 +827,7 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
       {/* Simple Edit Modal */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden">
             <header className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Edit {editingItem.type}</h3>
               <button onClick={() => setEditingItem(null)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-200 rounded-full transition-all">
@@ -614,98 +837,344 @@ const MemberDetails: React.FC<MemberDetailsProps> = ({ memberId, onBack }) => {
             <form onSubmit={handleUpdateItem} className="p-6 space-y-4">
               {editingItem.type === 'family' && (
                 <>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={editingItem.data.name || ''} 
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 uppercase">Relation</label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
                       <input 
-                        type="text" 
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                        value={editingItem.data.relation || ''} 
-                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, relation: e.target.value } })}
+                         type="text" 
+                         required
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.name || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Relation</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.relation || 'Spouse'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, relation: e.target.value } })}
+                       >
+                         <option value="Spouse">Spouse</option>
+                         <option value="Father">Father</option>
+                         <option value="Mother">Mother</option>
+                         <option value="Brother">Brother</option>
+                         <option value="Sister">Sister</option>
+                         <option value="Daughter">Daughter</option>
+                         <option value="Son">Son</option>
+                         <option value="Grand Child">Grand Child</option>
+                       </select>
+                     </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date of Birth</label>
+                      <input 
+                        type="date" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={editingItem.data.dob || ''} 
+                        onChange={e => handleDOBChange(e.target.value, true)}
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-500 uppercase">Age</label>
                       <input 
-                        type="number" 
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                        value={editingItem.data.age || 0} 
-                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, age: Number(e.target.value) } })}
-                      />
-                    </div>
+                         type="number" 
+                         required
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.age || 0} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, age: Number(e.target.value) } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Gender</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.gender || 'Male'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: e.target.value } })}
+                       >
+                         <option value="Male">Male</option>
+                         <option value="Female">Female</option>
+                         <option value="Other">Other</option>
+                       </select>
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Mobile Number</label>
+                       <input 
+                         type="tel" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.mobile || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, mobile: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Email ID</label>
+                       <input 
+                         type="email" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.email || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, email: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Marital Status</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.maritalStatus || 'Single'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, maritalStatus: e.target.value } })}
+                       >
+                         <option value="Single">Single</option>
+                         <option value="Married">Married</option>
+                         <option value="Widowed">Widowed</option>
+                         <option value="Divorced">Divorced</option>
+                       </select>
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Living Status</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.isAlive !== false ? 'Live' : 'No Live'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, isAlive: e.target.value === 'Live' } })}
+                       >
+                         <option value="Live">Live</option>
+                         <option value="No Live">No Live</option>
+                       </select>
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Education</label>
+                       <input 
+                         type="text" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.education || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, education: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Profession</label>
+                       <input 
+                         type="text" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.profession || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, profession: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Area</label>
+                       <input 
+                         type="text" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.area || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, area: e.target.value } })}
+                       />
+                     </div>
+                   </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Full Address</label>
+                    <textarea 
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      rows={2}
+                      value={editingItem.data.address || ''} 
+                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, address: e.target.value } })}
+                    />
                   </div>
                 </>
               )}
               {editingItem.type === 'child' && (
                 <>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={editingItem.data.name || ''} 
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 uppercase">Education</label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
                       <input 
-                        type="text" 
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                        value={editingItem.data.education || ''} 
-                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, education: e.target.value } })}
-                      />
-                    </div>
+                         type="text" 
+                         required
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.name || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Relation</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.relation || 'Son'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, relation: e.target.value } })}
+                       >
+                         <option value="Son">Son</option>
+                         <option value="Daughter">Daughter</option>
+                         <option value="Grand Child">Grand Child</option>
+                       </select>
+                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 uppercase">Profession</label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date of Birth</label>
                       <input 
-                        type="text" 
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                        value={editingItem.data.job || ''} 
-                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, job: e.target.value } })}
+                        type="date" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                        value={editingItem.data.dob || ''} 
+                        onChange={e => handleDOBChange(e.target.value, true)}
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-500 uppercase">Age</label>
                       <input 
+                         type="number" 
+                         required
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.age || 0} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, age: Number(e.target.value) } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Gender</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.gender || 'Male'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: e.target.value } })}
+                       >
+                         <option value="Male">Male</option>
+                         <option value="Female">Female</option>
+                         <option value="Other">Other</option>
+                       </select>
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Mobile Number</label>
+                       <input 
+                         type="tel" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.mobile || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, mobile: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Email ID</label>
+                       <input 
+                         type="email" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.email || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, email: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Marital Status</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.maritalStatus || 'Single'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, maritalStatus: e.target.value } })}
+                       >
+                         <option value="Single">Single</option>
+                         <option value="Married">Married</option>
+                       </select>
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Living Status</label>
+                       <select 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.isAlive !== false ? 'Live' : 'No Live'} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, isAlive: e.target.value === 'Live' } })}
+                       >
+                         <option value="Live">Live</option>
+                         <option value="No Live">No Live</option>
+                       </select>
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Education</label>
+                       <input 
+                         type="text" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.education || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, education: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Profession</label>
+                       <input 
+                         type="text" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.profession || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, profession: e.target.value } })}
+                       />
+                     </div>
+                     <div className="space-y-1">
+                       <label className="text-xs font-bold text-gray-500 uppercase">Area</label>
+                       <input 
+                         type="text" 
+                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                         value={editingItem.data.area || ''} 
+                         onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, area: e.target.value } })}
+                       />
+                     </div>
+                   </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Full Address</label>
+                    <textarea 
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                      rows={2}
+                      value={editingItem.data.address || ''} 
+                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, address: e.target.value } })}
+                    />
+                  </div>
+                </>
+              )}
+              {editingItem.type === 'donation' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Amount (₹)</label>
+                      <input 
                         type="number" 
                         className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                        value={editingItem.data.age || 0} 
-                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, age: Number(e.target.value) } })}
+                        value={editingItem.data.amount || 0} 
+                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, amount: Number(e.target.value) } })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Purpose</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={editingItem.data.purpose || ''} 
+                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, purpose: e.target.value } })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
+                      <input 
+                        type="date" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={editingItem.data.date || ''} 
+                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, date: e.target.value } })}
                       />
                     </div>
                   </div>
                 </>
               )}
-              {(editingItem.type === 'donation' || editingItem.type === 'fee') && (
+              {editingItem.type === 'fee' && (
                 <>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Amount (₹)</label>
-                    <input 
-                      type="number" 
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={editingItem.data.amount || 0} 
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, amount: Number(e.target.value) } })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
-                    <input 
-                      type="date" 
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
-                      value={editingItem.data.date || ''} 
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, date: e.target.value } })}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Year</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={editingItem.data.year || ''} 
+                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, year: e.target.value } })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Amount (₹)</label>
+                      <input 
+                        type="number" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={editingItem.data.amount || 0} 
+                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, amount: Number(e.target.value) } })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
+                      <input 
+                        type="date" 
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl" 
+                        value={editingItem.data.date || ''} 
+                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, date: e.target.value } })}
+                      />
+                    </div>
                   </div>
                 </>
               )}

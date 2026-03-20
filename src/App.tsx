@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -10,10 +10,40 @@ import AnnualFees from './components/AnnualFees';
 import Teams from './components/Teams';
 import FamilyTree from './components/FamilyTree';
 import ChildrenDirectory from './components/ChildrenDirectory';
+import EventExpenses from './components/EventExpenses';
+import BalanceSheet from './components/BalanceSheet';
+import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { db } from './firebase';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useFirebase();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  useEffect(() => {
+    const removePanktiImage = async () => {
+      if (!user) return;
+      
+      const nameToRemove = "Pankti Chirag Bhavsar";
+      
+      // Check members collection
+      const membersQuery = query(collection(db, 'members'), where('name', '==', nameToRemove));
+      const membersSnap = await getDocs(membersQuery);
+      membersSnap.forEach(async (document) => {
+        await updateDoc(doc(db, 'members', document.id), { photoUrl: '' });
+        console.log(`Removed photo for member: ${nameToRemove}`);
+      });
+
+      // Check children collection
+      const childrenQuery = query(collection(db, 'children'), where('name', '==', nameToRemove));
+      const childrenSnap = await getDocs(childrenQuery);
+      childrenSnap.forEach(async (document) => {
+        await updateDoc(doc(db, 'children', document.id), { photoUrl: '' });
+        console.log(`Removed photo for child: ${nameToRemove}`);
+      });
+    };
+
+    removePanktiImage();
+  }, [user]);
 
   if (loading) {
     return (
@@ -46,6 +76,10 @@ const AppContent: React.FC = () => {
         return <Donations />;
       case 'annual-fees':
         return <AnnualFees />;
+      case 'event-expenses':
+        return <EventExpenses />;
+      case 'balance-sheet':
+        return <BalanceSheet />;
       case 'teams':
         return <Teams />;
       default:

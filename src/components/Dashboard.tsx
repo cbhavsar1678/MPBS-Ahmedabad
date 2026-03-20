@@ -36,6 +36,7 @@ const Dashboard: React.FC = () => {
     totalFamilies: 0,
     totalMale: 0,
     totalFemale: 0,
+    totalOther: 0,
     totalDonations: 0,
     totalAnnualFees: 0,
     childrenUnder18: 0,
@@ -46,24 +47,49 @@ const Dashboard: React.FC = () => {
   const [areaData, setAreaData] = useState<any[]>([]);
 
   useEffect(() => {
+    const male = members.filter(m => m.gender?.toLowerCase().trim() === 'male').length +
+                 familyMembers.filter(f => f.gender?.toLowerCase().trim() === 'male').length +
+                 children.filter(c => c.gender?.toLowerCase().trim() === 'male').length;
+    
+    const female = members.filter(m => m.gender?.toLowerCase().trim() === 'female').length +
+                   familyMembers.filter(f => f.gender?.toLowerCase().trim() === 'female').length +
+                   children.filter(c => c.gender?.toLowerCase().trim() === 'female').length;
+
+    const other = members.filter(m => !['male', 'female'].includes(m.gender?.toLowerCase().trim() || '')).length +
+                  familyMembers.filter(f => !['male', 'female'].includes(f.gender?.toLowerCase().trim() || '')).length +
+                  children.filter(c => !['male', 'female'].includes(c.gender?.toLowerCase().trim() || '')).length;
+    
+    const total = members.length + familyMembers.length + children.length;
+
+    setStats(prev => ({
+      ...prev,
+      totalMembers: total,
+      totalMale: male,
+      totalFemale: female,
+      totalOther: other,
+    }));
+
+    const data = [
+      { name: 'Male', value: male },
+      { name: 'Female', value: female },
+    ];
+
+    if (other > 0) {
+      data.push({ name: 'Other', value: other });
+    }
+
+    setGenderData(data);
+  }, [members, familyMembers, children]);
+
+  useEffect(() => {
     const unsubMembers = onSnapshot(collection(db, 'members'), (snapshot) => {
       const membersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
       setMembers(membersData);
-      const male = membersData.filter(m => m.gender === 'Male').length;
-      const female = membersData.filter(m => m.gender === 'Female').length;
       
       setStats(prev => ({
         ...prev,
-        totalMembers: membersData.length,
         totalFamilies: membersData.length, // Assuming each main member represents a family
-        totalMale: male,
-        totalFemale: female,
       }));
-
-      setGenderData([
-        { name: 'Male', value: male },
-        { name: 'Female', value: female },
-      ]);
 
       // Calculate area distribution
       const areas: { [key: string]: number } = {};
@@ -130,7 +156,7 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
-  const COLORS = ['#6366f1', '#ec4899'];
+  const COLORS = ['#6366f1', '#ec4899', '#94a3b8'];
 
   const handleDelete = async () => {
     if (deleteConfirm.id) {
@@ -163,7 +189,10 @@ const Dashboard: React.FC = () => {
         <StatCard icon={<Users className="text-indigo-600" />} label="Total Members" value={stats.totalMembers} color="bg-indigo-50" />
         <StatCard icon={<Users className="text-blue-600" />} label="Total Families" value={stats.totalFamilies} color="bg-blue-50" />
         <StatCard icon={<UserCheck className="text-emerald-600" />} label="Male Members" value={stats.totalMale} color="bg-emerald-50" />
-        <StatCard icon={<UserMinus className="text-pink-600" />} label="Female Members" value={stats.totalFemale} color="bg-pink-50" />
+        <StatCard icon={<User className="text-pink-600" />} label="Female Members" value={stats.totalFemale} color="bg-pink-50" />
+        {stats.totalOther > 0 && (
+          <StatCard icon={<User className="text-slate-600" />} label="Other Gender" value={stats.totalOther} color="bg-slate-50" />
+        )}
         <StatCard icon={<Baby className="text-violet-600" />} label="Children (18+)" value={stats.children18Plus} color="bg-violet-50" />
         <StatCard icon={<Baby size={20} className="text-cyan-600" />} label="Children (<18)" value={stats.childrenUnder18} color="bg-cyan-50" />
         {isAdmin && (
@@ -238,7 +267,7 @@ const Dashboard: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <div className="text-sm text-gray-900 font-medium">Age: {member.age}</div>
+                        <div className="text-sm text-gray-900 font-medium">{member.gender}, Age: {member.age}</div>
                         <div className="flex items-center text-sm text-gray-500">
                           <Briefcase size={14} className="mr-2" /> {member.profession}
                         </div>

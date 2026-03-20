@@ -325,21 +325,21 @@ const AnnualFees: React.FC = () => {
               </button>
             </header>
             <form onSubmit={handleSubmit} className="p-8 space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Select Member</label>
-                <select
-                  required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={formData.memberId}
-                  onChange={e => setFormData({ ...formData, memberId: e.target.value })}
-                >
-                  <option value="">Choose a member...</option>
-                  {members.map(member => (
-                    <option key={member.id} value={member.id}>{member.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Select Member</label>
+                  <select
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={formData.memberId}
+                    onChange={e => setFormData({ ...formData, memberId: e.target.value })}
+                  >
+                    <option value="">Choose a member...</option>
+                    {members.map(member => (
+                      <option key={member.id} value={member.id}>{member.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Year</label>
                   <select
@@ -348,7 +348,7 @@ const AnnualFees: React.FC = () => {
                     value={formData.year}
                     onChange={e => setFormData({ ...formData, year: e.target.value })}
                   >
-                    {[0, 1, 2].map(offset => {
+                    {[0, 1, 2, 3, 4, 5].map(offset => {
                       const year = (new Date().getFullYear() - offset).toString();
                       return <option key={year} value={year}>{year}</option>;
                     })}
@@ -365,15 +365,17 @@ const AnnualFees: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700">Payment Date</label>
-                <input
-                  type="date"
-                  required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  value={formData.date}
-                  onChange={e => setFormData({ ...formData, date: e.target.value })}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Payment Date</label>
+                  <input
+                    type="date"
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    value={formData.date}
+                    onChange={e => setFormData({ ...formData, date: e.target.value })}
+                  />
+                </div>
               </div>
               <footer className="pt-6 flex justify-end space-x-3">
                 <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-all">Cancel</button>

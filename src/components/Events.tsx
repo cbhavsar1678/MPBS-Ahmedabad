@@ -374,8 +374,8 @@ const Events: React.FC = () => {
               </button>
             </header>
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2 col-span-1 md:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2 col-span-1 md:col-span-3">
                   <label className="text-sm font-bold text-gray-700">Event Name</label>
                   <input
                     type="text"
@@ -385,7 +385,7 @@ const Events: React.FC = () => {
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2 col-span-1 md:col-span-2">
+                <div className="space-y-2 col-span-1 md:col-span-3">
                   <label className="text-sm font-bold text-gray-700">Description</label>
                   <textarea
                     required

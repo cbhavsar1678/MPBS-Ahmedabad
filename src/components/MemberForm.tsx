@@ -49,9 +49,26 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, onClose, onSuccess }) =
     }
   };
 
+  const calculateAge = (dob: string) => {
+    if (!dob) return 0;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const handleDOBChange = (dob: string) => {
+    const age = calculateAge(dob);
+    setFormData({ ...formData, dob, age });
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <header className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
@@ -65,7 +82,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, onClose, onSuccess }) =
         </header>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Full Name</label>
               <input
@@ -84,6 +101,15 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, onClose, onSuccess }) =
                 className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 value={formData.mobile || ''}
                 onChange={e => setFormData({ ...formData, mobile: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700">Date of Birth</label>
+              <input
+                type="date"
+                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                value={formData.dob || ''}
+                onChange={e => handleDOBChange(e.target.value)}
               />
             </div>
             <div className="space-y-2">

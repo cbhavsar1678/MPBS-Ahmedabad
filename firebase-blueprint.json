@@ -102,6 +102,44 @@
         "members": { "type": "array", "items": { "type": "string" }, "description": "List of member IDs in the team" }
       },
       "required": ["name", "creationDate"]
+    },
+    "EventExpense": {
+      "title": "EventExpense",
+      "description": "Expenses related to community events",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string", "description": "Reference to the Event" },
+        "eventName": { "type": "string", "description": "Name of the event" },
+        "year": { "type": "string", "description": "Year of the event" },
+        "expenses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": { "type": "number" },
+              "description": { "type": "string" },
+              "date": { "type": "string", "format": "date" }
+            }
+          }
+        },
+        "totalAmount": { "type": "number" }
+      },
+      "required": ["eventId", "eventName", "year", "totalAmount"]
+    },
+    "BankDeposit": {
+      "title": "BankDeposit",
+      "description": "FD and Bank deposit records",
+      "type": "object",
+      "properties": {
+        "bankName": { "type": "string" },
+        "depositorName": { "type": "string" },
+        "depositAmount": { "type": "number" },
+        "depositDate": { "type": "string", "format": "date" },
+        "maturityDate": { "type": "string", "format": "date" },
+        "maturityTime": { "type": "string" },
+        "finalAmount": { "type": "number" }
+      },
+      "required": ["bankName", "depositorName", "depositAmount", "depositDate", "maturityDate", "finalAmount"]
     }
   },
   "firestore": {
@@ -111,6 +149,8 @@
     "events": { "schema": "Event", "description": "Collection of community events" },
     "donations": { "schema": "Donation", "description": "Collection of donations" },
     "annual-fees": { "schema": "AnnualFee", "description": "Collection of annual fees" },
-    "teams": { "schema": "Team", "description": "Collection of teams" }
+    "teams": { "schema": "Team", "description": "Collection of teams" },
+    "event-expenses": { "schema": "EventExpense", "description": "Collection of event expenses" },
+    "bank-deposits": { "schema": "BankDeposit", "description": "Collection of bank deposits" }
   }
 }

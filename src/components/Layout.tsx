@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, UserPlus, Calendar, Heart, CreditCard, Users2, LogOut, Menu, X, Baby } from 'lucide-react';
+import { LayoutDashboard, Users, UserPlus, Calendar, Heart, CreditCard, Users2, LogOut, Menu, X, Baby, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -32,15 +32,25 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
   const { isAdmin, user } = useFirebase();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [expandedGroups, setExpandedGroups] = React.useState<string[]>(['events-group']);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { id: 'directory', label: 'Member Directory', icon: <Users size={20} /> },
     { id: 'children', label: 'Children', icon: <Baby size={20} /> },
     { id: 'family-tree', label: 'Family Tree', icon: <UserPlus size={20} />, adminOnly: true },
-    { id: 'events', label: 'Events', icon: <Calendar size={20} /> },
+    { 
+      id: 'events-group', 
+      label: 'Events', 
+      icon: <Calendar size={20} />,
+      subItems: [
+        { id: 'events', label: 'All Events' },
+        { id: 'event-expenses', label: 'Event Expenses', adminOnly: true }
+      ]
+    },
     { id: 'donations', label: 'Donations', icon: <Heart size={20} />, adminOnly: true },
     { id: 'annual-fees', label: 'Annual Fees', icon: <CreditCard size={20} />, adminOnly: true },
+    { id: 'balance-sheet', label: 'Balance Sheet', icon: <FileText size={20} />, adminOnly: true },
     { id: 'teams', label: 'Teams', icon: <Users2 size={20} /> },
   ];
 
@@ -80,8 +90,58 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => (
-            (!item.adminOnly || isAdmin) && (
+          {menuItems.map((item) => {
+            if (item.adminOnly && !isAdmin) return null;
+
+            if ('subItems' in item && item.subItems) {
+              const isExpanded = expandedGroups.includes(item.id);
+              const hasActiveSubItem = item.subItems.some(sub => activeTab === sub.id);
+
+              return (
+                <div key={item.id} className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setExpandedGroups(prev => 
+                        prev.includes(item.id) 
+                          ? prev.filter(id => id !== item.id) 
+                          : [...prev, item.id]
+                      );
+                    }}
+                    className={`flex items-center justify-between w-full p-3 rounded-lg transition-colors ${
+                      hasActiveSubItem ? 'text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      {item.icon}
+                      <span className="font-medium">{item.label}</span>
+                    </div>
+                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                  
+                  {isExpanded && (
+                    <div className="pl-10 space-y-1">
+                      {item.subItems.map(sub => (
+                        (!sub.adminOnly || isAdmin) && (
+                          <button
+                            key={sub.id}
+                            onClick={() => handleTabClick(sub.id)}
+                            className={`flex items-center w-full p-2 rounded-lg text-sm transition-colors ${
+                              activeTab === sub.id 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                            }`}
+                          >
+                            {sub.label}
+                          </button>
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
               <SidebarItem
                 key={item.id}
                 icon={item.icon}
@@ -89,8 +149,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                 active={activeTab === item.id}
                 onClick={() => handleTabClick(item.id)}
               />
-            )
-          ))}
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-gray-800">

@@ -66,5 +66,17 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
+
+    // Event Expenses
+    match /event-expenses/{expenseId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Bank Deposits
+    match /bank-deposits/{depositId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
   }
 }
