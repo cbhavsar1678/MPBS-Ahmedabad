@@ -77,9 +77,10 @@
       "properties": {
         "memberId": { "type": "string", "description": "Reference to the Member" },
         "amount": { "type": "number", "description": "Donation amount" },
-        "date": { "type": "string", "format": "date", "description": "Donation date" }
+        "date": { "type": "string", "format": "date", "description": "Donation date" },
+        "paymentType": { "type": "string", "enum": ["online", "offline"], "description": "Payment method" }
       },
-      "required": ["memberId", "amount", "date"]
+      "required": ["memberId", "amount", "date", "paymentType"]
     },
     "AnnualFee": {
       "title": "AnnualFee",
@@ -88,9 +89,10 @@
       "properties": {
         "memberId": { "type": "string", "description": "Reference to the Member" },
         "amount": { "type": "number", "description": "Annual fee amount" },
-        "date": { "type": "string", "format": "date", "description": "Payment date" }
+        "date": { "type": "string", "format": "date", "description": "Payment date" },
+        "paymentType": { "type": "string", "enum": ["online", "offline"], "description": "Payment method" }
       },
-      "required": ["memberId", "amount", "date"]
+      "required": ["memberId", "amount", "date", "paymentType"]
     },
     "Team": {
       "title": "Team",
@@ -132,14 +134,30 @@
       "type": "object",
       "properties": {
         "bankName": { "type": "string" },
+        "branchLocation": { "type": "string" },
         "depositorName": { "type": "string" },
         "depositAmount": { "type": "number" },
         "depositDate": { "type": "string", "format": "date" },
+        "period": { "type": "string" },
+        "maturityAmount": { "type": "number" },
         "maturityDate": { "type": "string", "format": "date" },
-        "maturityTime": { "type": "string" },
-        "finalAmount": { "type": "number" }
+        "maturityTime": { "type": "string", "description": "Legacy field for period" },
+        "finalAmount": { "type": "number", "description": "Legacy field for maturity amount" },
+        "photos": { "type": "array", "items": { "type": "string" } }
       },
-      "required": ["bankName", "depositorName", "depositAmount", "depositDate", "maturityDate", "finalAmount"]
+      "required": ["bankName", "depositorName", "depositAmount", "depositDate", "maturityDate"]
+    },
+    "ProfitSurplus": {
+      "title": "ProfitSurplus",
+      "description": "Profit or surplus details",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "amount": { "type": "number" },
+        "photos": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["description", "date", "amount"]
     }
   },
   "firestore": {
@@ -151,6 +169,7 @@
     "annual-fees": { "schema": "AnnualFee", "description": "Collection of annual fees" },
     "teams": { "schema": "Team", "description": "Collection of teams" },
     "event-expenses": { "schema": "EventExpense", "description": "Collection of event expenses" },
-    "bank-deposits": { "schema": "BankDeposit", "description": "Collection of bank deposits" }
+    "bank-deposits": { "schema": "BankDeposit", "description": "Collection of bank deposits" },
+    "profit-surplus": { "schema": "ProfitSurplus", "description": "Collection of profit/surplus details" }
   }
 }

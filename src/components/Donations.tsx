@@ -37,7 +37,8 @@ const Donations: React.FC = () => {
     memberId: '',
     amount: 0,
     date: new Date().toISOString().split('T')[0],
-    purpose: ''
+    purpose: '',
+    paymentType: 'offline' as 'online' | 'offline'
   });
 
   useEffect(() => {
@@ -95,7 +96,7 @@ const Donations: React.FC = () => {
       }
       setShowForm(false);
       setEditingDonation(null);
-      setFormData({ memberId: '', amount: 0, date: new Date().toISOString().split('T')[0], purpose: '' });
+      setFormData({ memberId: '', amount: 0, date: new Date().toISOString().split('T')[0], purpose: '', paymentType: 'offline' });
     } catch (error) {
       handleFirestoreError(error, editingDonation ? OperationType.UPDATE : OperationType.CREATE, 'donations');
     } finally {
@@ -105,7 +106,13 @@ const Donations: React.FC = () => {
 
   const handleEdit = (donation: Donation) => {
     setEditingDonation(donation);
-    setFormData({ memberId: donation.memberId, amount: donation.amount, date: donation.date, purpose: donation.purpose || '' });
+    setFormData({ 
+      memberId: donation.memberId, 
+      amount: donation.amount, 
+      date: donation.date, 
+      purpose: donation.purpose || '',
+      paymentType: donation.paymentType || 'offline'
+    });
     setShowForm(true);
   };
 
@@ -120,12 +127,24 @@ const Donations: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    const data = filteredAndSortedDonations.map(d => ({ Donor: getMemberName(d.memberId), Amount: d.amount, Date: d.date, Purpose: d.purpose || 'General' }));
+    const data = filteredAndSortedDonations.map(d => ({ 
+      Donor: getMemberName(d.memberId), 
+      Amount: d.amount, 
+      Date: d.date, 
+      Purpose: d.purpose || 'General',
+      'Payment Type': d.paymentType || 'offline'
+    }));
     exportToCSV(data, 'donations_history');
   };
 
   const handleExportPDF = () => {
-    const data = filteredAndSortedDonations.map(d => ({ Donor: getMemberName(d.memberId), Amount: `₹${d.amount}`, Date: d.date, Purpose: d.purpose || 'General' }));
+    const data = filteredAndSortedDonations.map(d => ({ 
+      Donor: getMemberName(d.memberId), 
+      Amount: `₹${d.amount}`, 
+      Date: d.date, 
+      Purpose: d.purpose || 'General',
+      'Type': d.paymentType || 'offline'
+    }));
     exportToPDF(data, 'Donations History', 'donations_history');
   };
 
@@ -247,7 +266,12 @@ const Donations: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-2xl">
                   <span className="text-sm text-gray-500">Amount</span>
-                  <span className="font-bold text-emerald-600 text-lg">₹{donation.amount.toLocaleString()}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-emerald-600 text-lg block">₹{donation.amount.toLocaleString()}</span>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${donation.paymentType === 'online' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {donation.paymentType || 'offline'}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-600 italic">“{donation.purpose || 'General Fund'}”</p>
               </div>
@@ -266,6 +290,7 @@ const Donations: React.FC = () => {
                   <th onClick={() => toggleSort('amount')} className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600">
                     <div className="flex items-center">Amount <ArrowUpDown size={14} className="ml-1" /></div>
                   </th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
                   <th onClick={() => toggleSort('date')} className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600">
                     <div className="flex items-center">Date <ArrowUpDown size={14} className="ml-1" /></div>
                   </th>
@@ -286,6 +311,11 @@ const Donations: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="font-bold text-emerald-600">₹{donation.amount.toLocaleString()}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${donation.paymentType === 'online' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {donation.paymentType || 'offline'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-sm">
                       {new Date(donation.date).toLocaleDateString()}
@@ -356,8 +386,8 @@ const Donations: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2 md:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Purpose</label>
                   <input
                     type="text"
@@ -366,6 +396,31 @@ const Donations: React.FC = () => {
                     value={formData.purpose}
                     onChange={e => setFormData({ ...formData, purpose: e.target.value })}
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Payment Type</label>
+                  <div className="flex items-center space-x-6 h-10">
+                    <label className="flex items-center space-x-2 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        checked={formData.paymentType === 'offline'}
+                        onChange={() => setFormData({ ...formData, paymentType: 'offline' })}
+                      />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Offline</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        checked={formData.paymentType === 'online'}
+                        onChange={() => setFormData({ ...formData, paymentType: 'online' })}
+                      />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Online</span>
+                    </label>
+                  </div>
                 </div>
               </div>
               <footer className="pt-6 flex justify-end space-x-3">

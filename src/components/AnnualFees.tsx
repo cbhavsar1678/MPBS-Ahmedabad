@@ -37,7 +37,8 @@ const AnnualFees: React.FC = () => {
     memberId: '',
     amount: 500,
     year: new Date().getFullYear().toString(),
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    paymentType: 'offline' as 'online' | 'offline'
   });
 
   useEffect(() => {
@@ -99,7 +100,7 @@ const AnnualFees: React.FC = () => {
       }
       setShowForm(false);
       setEditingFee(null);
-      setFormData({ memberId: '', amount: 500, year: new Date().getFullYear().toString(), date: new Date().toISOString().split('T')[0] });
+      setFormData({ memberId: '', amount: 500, year: new Date().getFullYear().toString(), date: new Date().toISOString().split('T')[0], paymentType: 'offline' });
     } catch (error) {
       handleFirestoreError(error, editingFee ? OperationType.UPDATE : OperationType.CREATE, 'annual-fees');
     } finally {
@@ -109,7 +110,13 @@ const AnnualFees: React.FC = () => {
 
   const handleEdit = (fee: AnnualFee) => {
     setEditingFee(fee);
-    setFormData({ memberId: fee.memberId, amount: fee.amount, year: (fee as any).year || new Date().getFullYear().toString(), date: fee.date });
+    setFormData({ 
+      memberId: fee.memberId, 
+      amount: fee.amount, 
+      year: (fee as any).year || new Date().getFullYear().toString(), 
+      date: fee.date,
+      paymentType: fee.paymentType || 'offline'
+    });
     setShowForm(true);
   };
 
@@ -124,12 +131,24 @@ const AnnualFees: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    const data = filteredAndSortedFees.map(f => ({ Member: getMemberName(f.memberId), Year: (f as any).year, Amount: f.amount, Date: f.date }));
+    const data = filteredAndSortedFees.map(f => ({ 
+      Member: getMemberName(f.memberId), 
+      Year: (f as any).year, 
+      Amount: f.amount, 
+      Date: f.date,
+      'Payment Type': f.paymentType || 'offline'
+    }));
     exportToCSV(data, 'annual_fees_history');
   };
 
   const handleExportPDF = () => {
-    const data = filteredAndSortedFees.map(f => ({ Member: getMemberName(f.memberId), Year: (f as any).year, Amount: `₹${f.amount}`, Date: f.date }));
+    const data = filteredAndSortedFees.map(f => ({ 
+      Member: getMemberName(f.memberId), 
+      Year: (f as any).year, 
+      Amount: `₹${f.amount}`, 
+      Date: f.date,
+      'Type': f.paymentType || 'offline'
+    }));
     exportToPDF(data, 'Annual Fees History', 'annual_fees_history');
   };
 
@@ -253,7 +272,12 @@ const AnnualFees: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-2xl">
                   <span className="text-sm text-gray-500">Amount</span>
-                  <span className="font-bold text-indigo-600 text-lg">₹{fee.amount.toLocaleString()}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-indigo-600 text-lg block">₹{fee.amount.toLocaleString()}</span>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${fee.paymentType === 'online' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {fee.paymentType || 'offline'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2 text-xs text-gray-400">
                   <Calendar size={12} />
@@ -278,6 +302,7 @@ const AnnualFees: React.FC = () => {
                   <th onClick={() => toggleSort('amount')} className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600">
                     <div className="flex items-center">Amount <ArrowUpDown size={14} className="ml-1" /></div>
                   </th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
                   <th onClick={() => toggleSort('date')} className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600">
                     <div className="flex items-center">Payment Date <ArrowUpDown size={14} className="ml-1" /></div>
                   </th>
@@ -295,6 +320,11 @@ const AnnualFees: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 font-bold text-gray-900">
                       ₹{fee.amount.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${fee.paymentType === 'online' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {fee.paymentType || 'offline'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-sm">
                       {new Date(fee.date).toLocaleDateString()}
@@ -365,7 +395,7 @@ const AnnualFees: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Payment Date</label>
                   <input
@@ -375,6 +405,31 @@ const AnnualFees: React.FC = () => {
                     value={formData.date}
                     onChange={e => setFormData({ ...formData, date: e.target.value })}
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Payment Type</label>
+                  <div className="flex items-center space-x-6 h-10">
+                    <label className="flex items-center space-x-2 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        checked={formData.paymentType === 'offline'}
+                        onChange={() => setFormData({ ...formData, paymentType: 'offline' })}
+                      />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Offline</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        checked={formData.paymentType === 'online'}
+                        onChange={() => setFormData({ ...formData, paymentType: 'online' })}
+                      />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition-colors">Online</span>
+                    </label>
+                  </div>
                 </div>
               </div>
               <footer className="pt-6 flex justify-end space-x-3">

@@ -78,6 +78,7 @@ export interface Donation {
   amount: number;
   date: string;
   purpose?: string;
+  paymentType: 'online' | 'offline';
 }
 
 export interface AnnualFee {
@@ -86,6 +87,7 @@ export interface AnnualFee {
   amount: number;
   date: string;
   year: string;
+  paymentType: 'online' | 'offline';
 }
 
 export interface Team {
@@ -115,10 +117,22 @@ export interface EventExpense {
 export interface BankDeposit {
   id?: string;
   bankName: string;
+  branchLocation: string;
   depositorName: string;
   depositAmount: number;
   depositDate: string;
+  period: string;
+  maturityAmount: number;
   maturityDate: string;
-  maturityTime: string;
-  finalAmount: number;
+  maturityTime?: string; // Keeping for backward compatibility if needed, but 'period' is requested
+  finalAmount?: number; // Keeping for backward compatibility, but 'maturityAmount' is requested
+  photos?: string[];
+}
+
+export interface ProfitSurplus {
+  id?: string;
+  description: string;
+  date: string;
+  amount: number;
+  photos?: string[];
 }

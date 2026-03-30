@@ -50,15 +50,34 @@ service cloud.firestore {
     }
 
     // Donations
+    function isValidDonation(data) {
+      return data.memberId is string && data.memberId.size() > 0 &&
+             data.amount is number && data.amount >= 0 &&
+             data.date is string &&
+             (data.paymentType == 'online' || data.paymentType == 'offline');
+    }
+
     match /donations/{donationId} {
       allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow create: if isAdmin() && isValidDonation(request.resource.data);
+      allow update: if isAdmin() && isValidDonation(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     // Annual Fees
+    function isValidAnnualFee(data) {
+      return data.memberId is string && data.memberId.size() > 0 &&
+             data.amount is number && data.amount >= 0 &&
+             data.date is string &&
+             data.year is string &&
+             (data.paymentType == 'online' || data.paymentType == 'offline');
+    }
+
     match /annual-fees/{feeId} {
       allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow create: if isAdmin() && isValidAnnualFee(request.resource.data);
+      allow update: if isAdmin() && isValidAnnualFee(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     // Teams
@@ -74,9 +93,33 @@ service cloud.firestore {
     }
 
     // Bank Deposits
+    function isValidBankDeposit(data) {
+      return data.bankName is string && data.bankName.size() > 0 &&
+             data.depositorName is string && data.depositorName.size() > 0 &&
+             data.depositAmount is number && data.depositAmount >= 0 &&
+             data.depositDate is string &&
+             data.maturityDate is string;
+    }
+
     match /bank-deposits/{depositId} {
       allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow create: if isAdmin() && isValidBankDeposit(request.resource.data);
+      allow update: if isAdmin() && isValidBankDeposit(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Profit or Surplus
+    function isValidProfitSurplus(data) {
+      return data.description is string && data.description.size() > 0 &&
+             data.date is string &&
+             data.amount is number && data.amount >= 0;
+    }
+
+    match /profit-surplus/{profitId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidProfitSurplus(request.resource.data);
+      allow update: if isAdmin() && isValidProfitSurplus(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }
