@@ -73,7 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 w-64 bg-gray-900 text-white flex flex-col z-50 transition-transform duration-300 transform
+        no-print fixed lg:static inset-y-0 left-0 w-64 bg-gray-900 text-white flex flex-col z-50 transition-transform duration-300 transform
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-6 border-b border-gray-800 flex items-center justify-between">
@@ -176,7 +176,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between z-30">
+        <header className="no-print lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between z-30">
           <div className="flex items-center space-x-3">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}

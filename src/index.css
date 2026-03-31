@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+@layer utilities {
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    
+    body {
+      background-color: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    main {
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible !important;
+    }
+
+    .print-container {
+      width: 100% !important;
+      max-width: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Ensure background colors and borders appear in print */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+}

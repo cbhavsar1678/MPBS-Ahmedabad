@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { AnnualFee, Donation, EventExpense, BankDeposit, ProfitSurplus } from '../types';
-import { Search, Plus, Edit2, Trash2, Eye, Download, FileText, X, IndianRupee, Landmark, Calendar, TrendingUp, TrendingDown, Wallet, Grid, List, PlusCircle, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Eye, Download, FileText, X, IndianRupee, Landmark, Calendar, TrendingUp, TrendingDown, Wallet, Grid, List, PlusCircle, Image as ImageIcon, Heart, History } from 'lucide-react';
 import { exportToCSV, exportToPDF } from '../utils/exportUtils';
 import ConfirmationModal from './ConfirmationModal';
 import { useFirebase } from '../contexts/FirebaseContext';
@@ -187,7 +187,36 @@ const BalanceSheet: React.FC = () => {
     };
   }, [eventExpenses, annualFees, donations, profitSurplus, selectedYear, sortByEventName]);
 
-  const yearGrandTotal = (balanceData.totals.fees + balanceData.totals.donations) - balanceData.totals.expense;
+  const yearGrandTotal = (balanceData.totals.fees + balanceData.totals.donations + balanceData.totals.profit) - balanceData.totals.expense;
+
+  const allYearsSummary = useMemo(() => {
+    const years = new Set<string>();
+    annualFees.forEach(f => years.add(f.year));
+    eventExpenses.forEach(e => years.add(e.year));
+    donations.forEach(d => years.add(d.date.split('-')[0]));
+    profitSurplus.forEach(p => years.add(p.date.split('-')[0]));
+
+    return Array.from(years).sort((a, b) => b.localeCompare(a)).map(year => {
+      const yearExpenses = eventExpenses.filter(exp => exp.year === year);
+      const yearFees = annualFees.filter(fee => fee.year === year);
+      const yearDonations = donations.filter(don => don.date.startsWith(year));
+      const yearProfit = profitSurplus.filter(p => p.date.startsWith(year));
+
+      const totalFees = yearFees.reduce((sum, fee) => sum + fee.amount, 0);
+      const totalDonations = yearDonations.reduce((sum, don) => sum + don.amount, 0);
+      const totalExpenses = yearExpenses.reduce((sum, exp) => sum + exp.totalAmount, 0);
+      const totalProfit = yearProfit.reduce((sum, p) => sum + p.amount, 0);
+
+      return {
+        year,
+        totalFees,
+        totalDonations,
+        totalExpenses,
+        totalProfit,
+        grandTotal: (totalFees + totalDonations + totalProfit) - totalExpenses
+      };
+    });
+  }, [annualFees, eventExpenses, donations, profitSurplus]);
 
   const handleBankSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -371,8 +400,11 @@ const BalanceSheet: React.FC = () => {
       'Category': `Total Profit or Surplus (${selectedYear})`,
       'Amount': balanceData.totals.profit
     }, {
-      'Category': 'Yearly Grand Total',
-      'Amount': balanceData.totals.fees + balanceData.totals.donations - balanceData.totals.profit
+      'Category': 'Total Debit (Expenses)',
+      'Amount': balanceData.totals.expense
+    }, {
+      'Category': 'Yearly Grand Total (Net Balance)',
+      'Amount': (balanceData.totals.fees + balanceData.totals.donations + balanceData.totals.profit) - balanceData.totals.expense
     }];
     exportToCSV(data, `balance_sheet_summary_${selectedYear}`);
   };
@@ -388,8 +420,11 @@ const BalanceSheet: React.FC = () => {
       'Category': `Total Profit or Surplus (${selectedYear})`,
       'Amount': balanceData.totals.profit
     }, {
-      'Category': 'Yearly Grand Total',
-      'Amount': balanceData.totals.fees + balanceData.totals.donations - balanceData.totals.profit
+      'Category': 'Total Debit (Expenses)',
+      'Amount': balanceData.totals.expense
+    }, {
+      'Category': 'Yearly Grand Total (Net Balance)',
+      'Amount': (balanceData.totals.fees + balanceData.totals.donations + balanceData.totals.profit) - balanceData.totals.expense
     }];
     exportToPDF(data, `Balance Sheet Summary - ${selectedYear}`, `balance_sheet_summary_${selectedYear}`);
   };
@@ -942,14 +977,62 @@ const BalanceSheet: React.FC = () => {
         </div>
       </section>
 
-      {/* Final Balance Sheet Section */}
-      <section className="space-y-6 pt-8 border-t-4 border-indigo-100">
+      {/* Yearly History Summary Section */}
+      <section className="space-y-6 no-print">
         <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <History className="text-indigo-600" size={32} />
+            <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Yearly History Summary</h3>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[2rem] border-2 border-gray-200 overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b-2 border-gray-200">
+                  <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest">Year</th>
+                  <th className="px-6 py-4 text-xs font-black text-emerald-600 uppercase tracking-widest text-right">Annual Fees</th>
+                  <th className="px-6 py-4 text-xs font-black text-emerald-600 uppercase tracking-widest text-right">Donations</th>
+                  <th className="px-6 py-4 text-xs font-black text-emerald-600 uppercase tracking-widest text-right">Profit/Surplus</th>
+                  <th className="px-6 py-4 text-xs font-black text-red-600 uppercase tracking-widest text-right">Expenses</th>
+                  <th className="px-6 py-4 text-xs font-black text-indigo-600 uppercase tracking-widest text-right">Net Balance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {allYearsSummary.map((summary) => (
+                  <tr key={summary.year} className={`hover:bg-gray-50 transition-colors ${summary.year === selectedYear ? 'bg-indigo-50/50' : ''}`}>
+                    <td className="px-6 py-4 font-black text-gray-900">{summary.year}</td>
+                    <td className="px-6 py-4 text-right font-bold text-emerald-700">₹{summary.totalFees.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right font-bold text-emerald-700">₹{summary.totalDonations.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right font-bold text-emerald-700">₹{summary.totalProfit.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right font-bold text-red-700">₹{summary.totalExpenses.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right">
+                      <span className={`inline-block px-4 py-1 rounded-full font-black text-sm ${summary.grandTotal >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                        ₹{summary.grandTotal.toLocaleString()}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {allYearsSummary.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400 italic">No historical data found</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Final Balance Sheet Section */}
+      <section id="final-balance-sheet" className="space-y-6 pt-8 border-t-4 border-indigo-100">
+        <div className="flex items-center justify-between no-print">
           <div className="flex items-center space-x-3">
             <Wallet className="text-indigo-600" size={32} />
             <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Balance Sheet</h3>
           </div>
-          <div className="flex items-center space-x-3 no-print">
+          <div className="flex items-center space-x-3">
             <select
               className="px-4 py-2 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-bold text-gray-600"
               value={selectedYear}
@@ -960,32 +1043,99 @@ const BalanceSheet: React.FC = () => {
                 return <option key={year} value={year}>{year}</option>;
               })}
             </select>
-            <button onClick={handleExportBalanceSheetSummaryCSV} className="p-2 text-gray-400 hover:text-indigo-600"><Download size={24} /></button>
-            <button onClick={() => window.print()} className="p-2 text-gray-400 hover:text-indigo-600"><FileText size={24} /></button>
+            <button 
+              onClick={handleExportBalanceSheetSummaryCSV}
+              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+              title="Export to CSV"
+            >
+              <Download size={24} />
+            </button>
+            <button 
+              onClick={() => window.print()}
+              className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+              title="Print Report"
+            >
+              <FileText size={24} />
+            </button>
           </div>
         </div>
 
-        <div className="bg-gray-50 p-8 rounded-[2rem] border border-gray-100 mt-8">
-          <h4 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
-            <Calendar className="mr-2 text-indigo-600" size={20} />
-            Year-wise Summary (Selected Year: {selectedYear})
-          </h4>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm">
-              <span className="font-bold text-gray-600">Total Annual Fee ({selectedYear})</span>
-              <span className="text-xl font-black text-gray-900">₹{balanceData.totals.fees.toLocaleString()}</span>
+        <div className="bg-white rounded-[2rem] border-2 border-gray-200 overflow-hidden shadow-xl print:shadow-none print:border-gray-400 print:rounded-none">
+          <div className="bg-indigo-600 p-6 text-white text-center border-b-2 border-indigo-700 print:bg-white print:text-black print:border-gray-400">
+            <h4 className="text-2xl font-black uppercase tracking-widest">Income And Expenses Account Year {selectedYear}</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-x-2 divide-gray-200 print:divide-gray-400">
+            {/* Left Side: Credit (Income) */}
+            <div className="flex flex-col">
+              <div className="bg-emerald-50 p-4 border-b-2 border-gray-200 text-center print:bg-white print:border-gray-400">
+                <h5 className="font-black text-emerald-800 uppercase tracking-wider">Credit (Income)</h5>
+              </div>
+              <div className="p-6 flex-1 space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <span className="font-bold text-gray-600">Total Annual Fee</span>
+                  <span className="font-black text-gray-900">₹{balanceData.totals.fees.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <span className="font-bold text-gray-600">Total Donation</span>
+                  <span className="font-black text-gray-900">₹{balanceData.totals.donations.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <span className="font-bold text-gray-600">Total Profit or Surplus</span>
+                  <span className="font-black text-gray-900">₹{balanceData.totals.profit.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="p-6 bg-emerald-100 border-t-2 border-gray-200 print:bg-white print:border-gray-400">
+                <div className="flex justify-between items-center">
+                  <span className="font-black text-emerald-900 uppercase">Total Credit</span>
+                  <span className="text-2xl font-black text-emerald-700">
+                    ₹{(balanceData.totals.fees + balanceData.totals.donations + balanceData.totals.profit).toLocaleString()}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm">
-              <span className="font-bold text-gray-600">Total Donation ({selectedYear})</span>
-              <span className="text-xl font-black text-gray-900">₹{balanceData.totals.donations.toLocaleString()}</span>
+
+            {/* Right Side: Debit (Expenses) */}
+            <div className="flex flex-col">
+              <div className="bg-red-50 p-4 border-b-2 border-gray-200 text-center print:bg-white print:border-gray-400">
+                <h5 className="font-black text-red-800 uppercase tracking-wider">Debit (Expenses)</h5>
+              </div>
+              <div className="p-6 flex-1 space-y-4">
+                {balanceData.rows.filter(r => r.type === 'event').map((event, idx) => (
+                  <div key={idx} className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <span className="font-bold text-gray-600">{event.name}</span>
+                    <span className="font-black text-gray-900">₹{event.expense.toLocaleString()}</span>
+                  </div>
+                ))}
+                {balanceData.rows.filter(r => r.type === 'event').length === 0 && (
+                  <p className="text-center text-gray-400 italic py-4">No event expenses recorded</p>
+                )}
+              </div>
+              <div className="p-6 bg-red-100 border-t-2 border-gray-200 print:bg-white print:border-gray-400">
+                <div className="flex justify-between items-center">
+                  <span className="font-black text-red-900 uppercase">Total Debit</span>
+                  <span className="text-2xl font-black text-red-700">
+                    ₹{balanceData.totals.expense.toLocaleString()}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm">
-              <span className="font-bold text-gray-600">Total Profit or Surplus ({selectedYear})</span>
-              <span className="text-xl font-black text-red-600">- ₹{balanceData.totals.profit.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center p-6 bg-indigo-600 rounded-2xl text-white shadow-lg">
-              <span className="text-lg font-black uppercase tracking-wider">Yearly Grand Total</span>
-              <span className="text-3xl font-black">₹{(balanceData.totals.fees + balanceData.totals.donations - balanceData.totals.profit).toLocaleString()}</span>
+          </div>
+
+          {/* Grand Total Footer */}
+          <div className="bg-indigo-600 p-8 text-white print:bg-white print:text-black print:border-t-2 print:border-gray-400">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div>
+                <p className="text-indigo-100 font-bold uppercase tracking-widest text-sm print:text-gray-500">Net Balance (Credit - Debit)</p>
+                <h5 className="text-4xl font-black">
+                  ₹{yearGrandTotal.toLocaleString()}
+                </h5>
+              </div>
+              <div className="text-right">
+                <p className="text-indigo-200 text-sm italic print:text-gray-500">
+                  Generated on {new Date().toLocaleDateString()}
+                </p>
+              </div>
             </div>
           </div>
         </div>
